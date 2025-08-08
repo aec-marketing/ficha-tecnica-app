@@ -28,6 +28,9 @@
   --gray-800: #1f2937;
   --gray-900: #111827;
 
+  /* Cor de texto principal */
+  --text-color: var(--gray-900);
+
   /* Cores de Status */
   --success-50: #ecfdf5;
   --success-500: #10b981;
@@ -123,6 +126,7 @@
   --gray-700: #f3f4f6;
   --gray-800: #f9fafb;
   --gray-900: #ffffff;
+  --text-color: #ffffff;
 }
 
 /* ========================================
@@ -893,6 +897,18 @@ body {
    ÍCONES (placeholder para CSS icons)
    ======================================== */
 
+/*
+  ========================================
+  ÍCONES (CSS Icon Classes)
+  ========================================
+  Usage:
+    Add the relevant .icon-xxx class to an element to display an emoji icon via the ::before pseudo-element.
+    Example: <span class="icon-user"></span> will show the user icon.
+  Extending:
+    To add a new icon, create a new class following the pattern .icon-[name]::before { content: "[emoji]"; }
+    Example: .icon-star::before { content: "⭐"; }
+*/
+
 .icon-user::before { content: "👤"; }
 .icon-building::before { content: "🏢"; }
 .icon-gear::before { content: "⚙️"; }
@@ -907,13 +923,18 @@ body {
 .icon-import::before { content: "📥"; }
 .icon-clear::before { content: "🗑️"; }
 .icon-print::before { content: "🖨️"; }
-.icon-pdf::before { content: "📄"; }
+.icon-pdf::before { content: "📑"; }
 .icon-help::before { content: "❓"; }
 .icon-info::before { content: "ℹ️"; }
 .icon-theme::before { content: "🌙"; }
 .icon-fullscreen::before { content: "⛶"; }
 .icon-menu::before { content: "☰"; }
 .icon-chevron::before { content: "⌄"; }
+.icon-arrow-right::before { content: "→"; }
+.icon-arrow-left::before { content: "←"; }
+```
+.icon-chevron-left::before { content: "‹"; }
+.icon-chevron-right::before { content: "›"; }
 .icon-arrow-right::before { content: "→"; }
 .icon-arrow-left::before { content: "←"; }
 
@@ -1205,9 +1226,21 @@ body {
 
 .text-gray-400 { color: var(--gray-400) !important; }
 .text-gray-500 { color: var(--gray-500) !important; }
-.text-gray-600 { color: var(--gray-600) !important; }
+.text-primary { color: var(--primary-600) !important; }
+
+/* Utilitário para cor primária em dark mode */
+.text-primary-dark { color: var(--primary-400) !important; }
+
+[data-theme="dark"] .text-primary {
+  color: var(--primary-400) !important;
+/* 
+  Use .text-error (var(--error-600)) for critical error messages and form validation errors.
+  Use var(--error-500) for less prominent error indicators, such as backgrounds or icons.
+*/
+.text-error { color: var(--error-600) !important; }
+```
 .text-gray-700 { color: var(--gray-700) !important; }
-.text-gray-900 { color: var(--gray-900) !important; }
+.text-gray-900 { color: var(--text-color) !important; }
 
 .text-primary { color: var(--primary-600) !important; }
 .text-success { color: var(--success-600) !important; }

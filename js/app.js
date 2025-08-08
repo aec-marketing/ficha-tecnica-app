@@ -2,11 +2,7 @@
  * FICHA TÉCNICA DIGITAL - APP.JS
  * Lógica principal da aplicação
  * 
- * Responsabilidades:
- * - Inicialização da aplicação
- * - Gerenciamento de estado global
- * - Coordenação entre módulos
- * - Navegação entre seções
+ * Versão compatível com index.html fornecido
  */
 
 // ===========================
@@ -49,23 +45,8 @@ let appData = {
         controladores: {}
     },
     automacao: {},
-    infraestrutura: {
-        pontoAlimentacao: '',
-        infraestruturaArComprimido: '',
-        fixacaoPainel: '',
-        fixacaoDispositivo: '',
-        distanciaEnergia: '',
-        distanciaAr: '',
-        protocoloBase: '',
-        protocoloOpcoes: [],
-        horarioTrabalho: []
-    },
-    observacoes: {
-        consideracoesTecnicas: '',
-        cronogramaPrazos: '',
-        requisitosEspeciais: '',
-        documentosNecessarios: ''
-    }
+    infraestrutura: {},
+    observacoes: {}
 };
 
 // Estado da aplicação
@@ -93,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Aplicação inicializada com sucesso');
     } catch (error) {
         console.error('❌ Erro na inicialização:', error);
-        showError('Erro ao inicializar aplicação. Recarregue a página.');
+        showError('Erro ao inicializar aplicação. Detalhes: ' + error.message);
     }
 });
 
@@ -101,179 +82,104 @@ document.addEventListener('DOMContentLoaded', function() {
  * Inicialização principal da aplicação
  */
 function initializeApp() {
-    // 1. Configurar event listeners globais
-    setupGlobalEventListeners();
+    // 1. Verificar se elementos essenciais existem
+    if (!validateRequiredElements()) {
+        throw new Error('Elementos HTML essenciais não encontrados');
+    }
     
-    // 2. Carregar dados salvos
-    loadDataFromStorage();
+    // 2. Configurar navegação
+    setupNavigation();
     
     // 3. Configurar formulários
     setupFormHandlers();
     
-    // 4. Configurar campos condicionais
-    setupConditionalFields();
+    // 4. Configurar botões de ação
+    setupActionButtons();
     
-    // 5. Configurar acionamentos dinâmicos
-    setupDynamicAcionamentos();
+    // 5. Carregar dados salvos
+    loadDataFromStorage();
     
-    // 6. Configurar dispositivos de segurança/automação
-    setupDeviceHandlers();
-    
-    // 7. Configurar sistema de abas
-    setupTabNavigation();
-    
-    // 8. Configurar auto-save
+    // 6. Configurar auto-save
     setupAutoSave();
     
-    // 9. Configurar validação
-    setupValidation();
-    
-    // 10. Atualizar interface inicial
+    // 7. Atualizar interface inicial
     updateUI();
     
-    updateSaveStatus('loaded', '✅ Dados carregados');
+    updateSaveStatus('loaded', 'Sistema carregado');
 }
 
 // ===========================
-// CONFIGURAÇÃO DE EVENT LISTENERS
+// VALIDAÇÃO DE ELEMENTOS HTML
 // ===========================
 
-function setupGlobalEventListeners() {
-    // Prevenir perda de dados ao sair da página
-    window.addEventListener('beforeunload', function(e) {
-        if (appState.hasUnsavedChanges) {
-            e.preventDefault();
-            e.returnValue = '';
-            return 'Você tem alterações não salvas. Deseja sair mesmo assim?';
+function validateRequiredElements() {
+    const requiredElements = [
+        'navTabs',
+        'saveStatus', 
+        'saveText',
+        'section-consultor',
+        'section-cliente'
+    ];
+    
+    for (const elementId of requiredElements) {
+        if (!document.getElementById(elementId)) {
+            console.error(`Elemento obrigatório não encontrado: ${elementId}`);
+            return false;
         }
-    });
-    
-    // Atalhos de teclado
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+S para salvar
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            saveData();
-        }
-        
-        // Ctrl+P para preview
-        if (e.ctrlKey && e.key === 'p') {
-            e.preventDefault();
-            showSection('preview');
-        }
-    });
-    
-    // Monitorar conectividade
-    window.addEventListener('online', function() {
-        updateSaveStatus('online', '🌐 Conectado');
-    });
-    
-    window.addEventListener('offline', function() {
-        updateSaveStatus('offline', '📴 Offline - dados salvos localmente');
-    });
-}
-
-function setupFormHandlers() {
-    const allInputs = document.querySelectorAll('input, select, textarea');
-    
-    allInputs.forEach(input => {
-        // Auto-save em mudanças
-        input.addEventListener('input', handleInputChange);
-        input.addEventListener('change', handleInputChange);
-        
-        // Validação em tempo real
-        input.addEventListener('blur', function() {
-            validateField(this);
-        });
-        
-        // Formatação automática para alguns campos
-        if (input.type === 'tel') {
-            input.addEventListener('input', function() {
-                this.value = formatPhone(this.value);
-            });
-        }
-    });
-}
-
-function handleInputChange(event) {
-    const field = event.target;
-    
-    // Marcar como alterado
-    appState.hasUnsavedChanges = true;
-    
-    // Agendar auto-save
-    scheduleAutoSave();
-    
-    // Atualizar preview se necessário
-    if (appState.currentSection === 'preview') {
-        scheduleUIUpdate();
     }
     
-    // Validar campo se necessário
-    if (field.hasAttribute('required') || field.value.trim()) {
-        validateField(field);
-    }
+    return true;
 }
 
 // ===========================
-// NAVEGAÇÃO ENTRE SEÇÕES
+// CONFIGURAÇÃO DA NAVEGAÇÃO
 // ===========================
 
-function setupTabNavigation() {
-    const tabs = document.querySelectorAll('.tab');
+function setupNavigation() {
+    const navTabs = document.querySelectorAll('.nav-tab');
     
-    tabs.forEach(tab => {
+    navTabs.forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
-            const sectionName = this.textContent.trim().toLowerCase();
+            const sectionName = this.getAttribute('data-section');
             
-            // Mapear nomes das abas para IDs das seções
-            const sectionMap = {
-                '👤 consultor': 'consultor',
-                '🏢 cliente': 'cliente', 
-                '⚙️ máquina': 'maquina',
-                '🔧 acionamentos': 'acionamentos',
-                '🛡️ segurança': 'seguranca',
-                '🤖 automação': 'automacao',
-                '📄 visualizar': 'preview'
-            };
-            
-            const targetSection = sectionMap[this.textContent.trim()] || 
-                                 this.getAttribute('data-section') ||
-                                 extractSectionFromText(this.textContent);
-            
-            if (targetSection) {
-                showSection(targetSection);
+            if (sectionName) {
+                showSection(sectionName);
             }
         });
     });
+    
+    // Navegação com botões Próximo/Anterior
+    setupNavigationButtons();
 }
 
-function extractSectionFromText(text) {
-    // Extrair nome da seção do texto da aba
-    const cleanText = text.replace(/[👤🏢⚙️🔧🛡️🤖📄]/g, '').trim().toLowerCase();
+function setupNavigationButtons() {
+    // Botões "Próximo"
+    document.querySelectorAll('.btn-next').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const nextSection = this.getAttribute('data-next');
+            if (nextSection && validateCurrentSection()) {
+                showSection(nextSection);
+            }
+        });
+    });
     
-    const mapping = {
-        'consultor': 'consultor',
-        'cliente': 'cliente',
-        'máquina': 'maquina',
-        'acionamentos': 'acionamentos',
-        'segurança': 'seguranca',
-        'automação': 'automacao',
-        'visualizar': 'preview'
-    };
-    
-    return mapping[cleanText] || cleanText;
+    // Botões "Anterior"
+    document.querySelectorAll('.btn-prev').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const prevSection = this.getAttribute('data-prev');
+            if (prevSection) {
+                showSection(prevSection);
+            }
+        });
+    });
 }
 
 /**
  * Navegar para uma seção específica
  */
 function showSection(sectionName) {
-    // Validar seção atual antes de trocar
-    if (!validateCurrentSection()) {
-        return false;
-    }
+    console.log(`📍 Navegando para seção: ${sectionName}`);
     
     // Salvar dados da seção atual
     collectFormData();
@@ -284,32 +190,22 @@ function showSection(sectionName) {
     // Atualizar interface
     updateTabsUI(sectionName);
     updateSectionsUI(sectionName);
+    updateMobileNav(sectionName);
     
     // Ações específicas por seção
-    switch (sectionName) {
-        case 'preview':
-            updatePreview();
-            break;
-        case 'acionamentos':
-            refreshAcionamentos();
-            break;
+    if (sectionName === 'preview') {
+        updatePreview();
     }
-    
-    // Log para debug
-    console.log(`📍 Navegou para seção: ${sectionName}`);
     
     return true;
 }
 
 function updateTabsUI(activeSection) {
-    document.querySelectorAll('.tab').forEach(tab => {
+    document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Encontrar e ativar a aba correta
-    const activeTab = document.querySelector(`[data-section="${activeSection}"]`) ||
-                     document.querySelector(`.tab:nth-child(${getSectionIndex(activeSection)})`);
-    
+    const activeTab = document.querySelector(`[data-section="${activeSection}"]`);
     if (activeTab) {
         activeTab.classList.add('active');
     }
@@ -320,15 +216,219 @@ function updateSectionsUI(activeSection) {
         section.classList.remove('active');
     });
     
-    const activeElement = document.getElementById(activeSection);
+    const activeElement = document.getElementById(`section-${activeSection}`);
     if (activeElement) {
         activeElement.classList.add('active');
     }
 }
 
-function getSectionIndex(sectionName) {
-    const sections = ['consultor', 'cliente', 'maquina', 'acionamentos', 'seguranca', 'automacao', 'preview'];
-    return sections.indexOf(sectionName) + 1;
+function updateMobileNav(activeSection) {
+    const currentSectionName = document.getElementById('currentSectionName');
+    if (currentSectionName) {
+        const sectionNames = {
+            'consultor': 'Consultor',
+            'cliente': 'Cliente',
+            'maquina': 'Máquina',
+            'acionamentos': 'Acionamentos',
+            'seguranca': 'Segurança',
+            'automacao': 'Automação',
+            'infraestrutura': 'Infraestrutura',
+            'observacoes': 'Observações',
+            'preview': 'Visualizar'
+        };
+        currentSectionName.textContent = sectionNames[activeSection] || activeSection;
+    }
+}
+
+// ===========================
+// CONFIGURAÇÃO DOS FORMULÁRIOS
+// ===========================
+
+function setupFormHandlers() {
+    const allInputs = document.querySelectorAll('input, select, textarea');
+    
+    allInputs.forEach(input => {
+        // Auto-save em mudanças
+        input.addEventListener('input', handleInputChange);
+        input.addEventListener('change', handleInputChange);
+        
+        // Formatação automática para telefone
+        if (input.type === 'tel') {
+            input.addEventListener('input', function() {
+                this.value = formatPhone(this.value);
+            });
+        }
+        
+        // Validação em tempo real
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+    });
+}
+
+function handleInputChange(event) {
+    // Marcar como alterado
+    appState.hasUnsavedChanges = true;
+    
+    // Agendar auto-save
+    scheduleAutoSave();
+    
+    // Atualizar status
+    updateSaveStatus('editing', 'Editando...');
+}
+
+// ===========================
+// CONFIGURAÇÃO DOS BOTÕES DE AÇÃO
+// ===========================
+
+function setupActionButtons() {
+    // Botão Exportar
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportData);
+    }
+    
+    // Botão Importar
+    const importBtn = document.getElementById('importBtn');
+    if (importBtn) {
+        importBtn.addEventListener('click', importData);
+    }
+    
+    // Botão Limpar
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearAllData);
+    }
+    
+    // Botão Imprimir
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+    
+    // Botão Gerar PDF
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+    if (generatePdfBtn) {
+        generatePdfBtn.addEventListener('click', generatePDF);
+    }
+}
+
+// ===========================
+// COLETA DE DADOS DO FORMULÁRIO
+// ===========================
+
+function collectFormData() {
+    try {
+        // Dados do consultor
+        const consultorNome = document.getElementById('consultorNome');
+        const consultorTelefone = document.getElementById('consultorTelefone');
+        const consultorEmail = document.getElementById('consultorEmail');
+        
+        if (consultorNome) appData.consultor.nome = consultorNome.value.trim();
+        if (consultorTelefone) appData.consultor.telefone = consultorTelefone.value.trim();
+        if (consultorEmail) appData.consultor.email = consultorEmail.value.trim();
+        
+        // Dados do cliente
+        const clienteNome = document.getElementById('clienteNome');
+        const clienteCidade = document.getElementById('clienteCidade');
+        const clienteContato = document.getElementById('clienteContato');
+        const clienteSegmento = document.getElementById('clienteSegmento');
+        const clienteTelefone = document.getElementById('clienteTelefone');
+        const clienteHorario = document.getElementById('clienteHorario');
+        const clienteEmail = document.getElementById('clienteEmail');
+        const clienteTurnos = document.getElementById('clienteTurnos');
+        
+        if (clienteNome) appData.cliente.nome = clienteNome.value.trim();
+        if (clienteCidade) appData.cliente.cidade = clienteCidade.value.trim();
+        if (clienteContato) appData.cliente.contato = clienteContato.value.trim();
+        if (clienteSegmento) appData.cliente.segmento = clienteSegmento.value.trim();
+        if (clienteTelefone) appData.cliente.telefone = clienteTelefone.value.trim();
+        if (clienteHorario) appData.cliente.horario = clienteHorario.value.trim();
+        if (clienteEmail) appData.cliente.email = clienteEmail.value.trim();
+        if (clienteTurnos) appData.cliente.turnos = clienteTurnos.value;
+        
+        console.log('📊 Dados coletados:', appData);
+        
+    } catch (error) {
+        console.error('❌ Erro ao coletar dados:', error);
+    }
+}
+
+// ===========================
+// PERSISTÊNCIA DE DADOS
+// ===========================
+
+function loadDataFromStorage() {
+    try {
+        const saved = localStorage.getItem('fichaTecnicaData');
+        if (saved) {
+            const savedData = JSON.parse(saved);
+            appData = { ...appData, ...savedData };
+            populateForm();
+            console.log('📥 Dados carregados do storage');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar dados:', error);
+    }
+}
+
+function saveData() {
+    try {
+        collectFormData();
+        localStorage.setItem('fichaTecnicaData', JSON.stringify(appData));
+        appState.hasUnsavedChanges = false;
+        appState.lastSaveTime = new Date();
+        updateSaveStatus('saved', 'Salvo automaticamente');
+        console.log('💾 Dados salvos com sucesso');
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao salvar dados:', error);
+        updateSaveStatus('error', 'Erro ao salvar');
+        return false;
+    }
+}
+
+function populateForm() {
+    try {
+        // Preencher dados do consultor
+        if (appData.consultor) {
+            const consultorNome = document.getElementById('consultorNome');
+            const consultorTelefone = document.getElementById('consultorTelefone');
+            const consultorEmail = document.getElementById('consultorEmail');
+            
+            if (consultorNome) consultorNome.value = appData.consultor.nome || '';
+            if (consultorTelefone) consultorTelefone.value = appData.consultor.telefone || '';
+            if (consultorEmail) consultorEmail.value = appData.consultor.email || '';
+        }
+        
+        // Preencher dados do cliente
+        if (appData.cliente) {
+            const clienteNome = document.getElementById('clienteNome');
+            const clienteCidade = document.getElementById('clienteCidade');
+            const clienteContato = document.getElementById('clienteContato');
+            const clienteSegmento = document.getElementById('clienteSegmento');
+            const clienteTelefone = document.getElementById('clienteTelefone');
+            const clienteHorario = document.getElementById('clienteHorario');
+            const clienteEmail = document.getElementById('clienteEmail');
+            const clienteTurnos = document.getElementById('clienteTurnos');
+            
+            if (clienteNome) clienteNome.value = appData.cliente.nome || '';
+            if (clienteCidade) clienteCidade.value = appData.cliente.cidade || '';
+            if (clienteContato) clienteContato.value = appData.cliente.contato || '';
+            if (clienteSegmento) clienteSegmento.value = appData.cliente.segmento || '';
+            if (clienteTelefone) clienteTelefone.value = appData.cliente.telefone || '';
+            if (clienteHorario) clienteHorario.value = appData.cliente.horario || '';
+            if (clienteEmail) clienteEmail.value = appData.cliente.email || '';
+            if (clienteTurnos) clienteTurnos.value = appData.cliente.turnos || '';
+        }
+        
+        console.log('📝 Formulário preenchido com dados salvos');
+        
+    } catch (error) {
+        console.error('❌ Erro ao preencher formulário:', error);
+    }
 }
 
 // ===========================
@@ -345,20 +445,66 @@ function setupAutoSave() {
 }
 
 function scheduleAutoSave() {
-    updateSaveStatus('editing', '✏️ Editando...');
-    
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
-        collectFormData();
         saveData();
     }, 2000); // Save após 2 segundos de inatividade
 }
 
-function scheduleUIUpdate() {
-    clearTimeout(uiUpdateTimeout);
-    uiUpdateTimeout = setTimeout(() => {
-        updateUI();
-    }, 500);
+// ===========================
+// VALIDAÇÃO
+// ===========================
+
+function validateField(field) {
+    // Implementação básica de validação
+    const value = field.value.trim();
+    let isValid = true;
+    let errorMessage = '';
+    
+    // Resetar estado de erro
+    field.classList.remove('error', 'invalid');
+    
+    // Validações específicas
+    if (field.required && !value) {
+        isValid = false;
+        errorMessage = 'Campo obrigatório';
+    } else if (field.type === 'email' && value && !isValidEmail(value)) {
+        isValid = false;
+        errorMessage = 'Email inválido';
+    }
+    
+    // Mostrar erro se inválido
+    if (!isValid) {
+        field.classList.add('error', 'invalid');
+        const errorElement = document.getElementById(`${field.id}-error`);
+        if (errorElement) {
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+        }
+    } else {
+        const errorElement = document.getElementById(`${field.id}-error`);
+        if (errorElement) {
+            errorElement.style.display = 'none';
+        }
+    }
+    
+    return isValid;
+}
+
+function validateCurrentSection() {
+    const currentSectionElement = document.getElementById(`section-${appState.currentSection}`);
+    if (!currentSectionElement) return true;
+    
+    const requiredFields = currentSectionElement.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!validateField(field)) {
+            isValid = false;
+        }
+    });
+    
+    return isValid;
 }
 
 // ===========================
@@ -366,140 +512,221 @@ function scheduleUIUpdate() {
 // ===========================
 
 function updateUI() {
-    // Atualizar indicadores visuais
-    updateProgressIndicators();
-    updateFieldCounters();
-    updateConditionalFields();
+    // Atualizar progresso
+    updateProgress();
     
-    // Atualizar preview se estiver ativo
+    // Atualizar preview se necessário
     if (appState.currentSection === 'preview') {
         updatePreview();
     }
 }
 
-function updateProgressIndicators() {
-    // Calcular progresso por seção
+function updateProgress() {
     const progress = calculateProgress();
+    const progressFill = document.getElementById('progressFill');
+    const progressPercent = document.getElementById('progressPercent');
     
-    // Atualizar indicadores visuais nas abas
-    document.querySelectorAll('.tab').forEach((tab, index) => {
-        const sectionName = ['consultor', 'cliente', 'maquina', 'acionamentos', 'seguranca', 'automacao'][index];
-        if (sectionName && progress[sectionName]) {
-            const percentage = progress[sectionName];
-            tab.style.setProperty('--progress', `${percentage}%`);
-            
-            // Adicionar classe baseada no progresso
-            tab.classList.toggle('incomplete', percentage < 50);
-            tab.classList.toggle('complete', percentage >= 80);
-        }
-    });
+    if (progressFill) {
+        progressFill.style.width = `${progress}%`;
+    }
+    
+    if (progressPercent) {
+        progressPercent.textContent = `${Math.round(progress)}%`;
+    }
 }
 
 function calculateProgress() {
-    const progress = {};
+    let totalFields = 0;
+    let filledFields = 0;
     
-    // Consultor (3 campos obrigatórios: nome)
-    const consultorFilled = [
-        appData.consultor.nome,
-        appData.consultor.telefone,
-        appData.consultor.email
-    ].filter(Boolean).length;
-    progress.consultor = (consultorFilled / 3) * 100;
+    // Calcular progresso baseado nos dados preenchidos
+    Object.values(appData).forEach(section => {
+        if (typeof section === 'object' && section !== null) {
+            Object.values(section).forEach(value => {
+                totalFields++;
+                if (value && value.toString().trim()) {
+                    filledFields++;
+                }
+            });
+        }
+    });
     
-    // Cliente (8 campos, nome obrigatório)
-    const clienteFilled = Object.values(appData.cliente).filter(Boolean).length;
-    progress.cliente = (clienteFilled / 8) * 100;
-    
-    // Máquina (campos variáveis)
-    const maquinaFilled = [
-        appData.maquina.nome,
-        appData.maquina.tipoDispositivo.length > 0,
-        appData.maquina.tensaoEntrada,
-        appData.maquina.fase,
-        appData.maquina.tipoControle
-    ].filter(Boolean).length;
-    progress.maquina = (maquinaFilled / 5) * 100;
-    
-    // Acionamentos
-    progress.acionamentos = appData.acionamentos.quantidade > 0 ? 100 : 0;
-    
-    // Segurança
-    const segurancaCount = Object.keys(appData.seguranca.botoes).length + 
-                          Object.keys(appData.seguranca.controladores).length;
-    progress.seguranca = segurancaCount > 0 ? 100 : 0;
-    
-    // Automação
-    const automacaoCount = Object.keys(appData.automacao).length;
-    progress.automacao = automacaoCount > 0 ? 100 : 0;
-    
-    return progress;
+    return totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
 }
-
-// ===========================
-// GESTÃO DE STATUS E NOTIFICAÇÕES
-// ===========================
 
 function updateSaveStatus(status, message) {
-    const statusElement = document.getElementById('saveStatus');
-    const textElement = document.getElementById('saveText');
+    const saveStatus = document.getElementById('saveStatus');
+    const saveText = document.getElementById('saveText');
+    const saveIndicator = document.getElementById('saveIndicator');
     
-    if (statusElement && textElement) {
-        statusElement.className = `save-status ${status}`;
-        textElement.textContent = message;
-        
-        if (status === 'saved') {
-            appState.hasUnsavedChanges = false;
-            appState.lastSaveTime = new Date();
-        }
+    if (saveText) {
+        saveText.textContent = message;
+    }
+    
+    if (saveStatus) {
+        saveStatus.className = `save-status ${status}`;
+    }
+    
+    if (saveIndicator) {
+        saveIndicator.className = `save-indicator ${status}`;
     }
 }
 
-function showError(message) {
-    console.error('Error:', message);
+// ===========================
+// PREVIEW E PDF
+// ===========================
+
+function updatePreview() {
+    collectFormData();
     
-    // Criar ou atualizar elemento de erro
-    let errorElement = document.getElementById('globalError');
-    if (!errorElement) {
-        errorElement = document.createElement('div');
-        errorElement.id = 'globalError';
-        errorElement.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--error-color);
-            color: white;
-            padding: 16px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 10000;
-            max-width: 400px;
+    const previewContainer = document.getElementById('previewDocument');
+    if (!previewContainer) return;
+    
+    let hasData = false;
+    let html = '<div class="preview-content">';
+    
+    // Preview Consultor
+    if (appData.consultor.nome || appData.consultor.telefone || appData.consultor.email) {
+        hasData = true;
+        html += `
+            <div class="preview-section">
+                <h3>👤 Dados do Consultor</h3>
+                <div class="preview-grid">
         `;
-        document.body.appendChild(errorElement);
+        
+        if (appData.consultor.nome) html += `<div><strong>Nome:</strong> ${appData.consultor.nome}</div>`;
+        if (appData.consultor.telefone) html += `<div><strong>Telefone:</strong> ${appData.consultor.telefone}</div>`;
+        if (appData.consultor.email) html += `<div><strong>Email:</strong> ${appData.consultor.email}</div>`;
+        
+        html += '</div></div>';
     }
     
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
+    // Preview Cliente
+    if (Object.values(appData.cliente).some(v => v)) {
+        hasData = true;
+        html += `
+            <div class="preview-section">
+                <h3>🏢 Dados do Cliente</h3>
+                <div class="preview-grid">
+        `;
+        
+        if (appData.cliente.nome) html += `<div><strong>Empresa:</strong> ${appData.cliente.nome}</div>`;
+        if (appData.cliente.cidade) html += `<div><strong>Cidade:</strong> ${appData.cliente.cidade}</div>`;
+        if (appData.cliente.contato) html += `<div><strong>Contato:</strong> ${appData.cliente.contato}</div>`;
+        if (appData.cliente.segmento) html += `<div><strong>Segmento:</strong> ${appData.cliente.segmento}</div>`;
+        if (appData.cliente.telefone) html += `<div><strong>Telefone:</strong> ${appData.cliente.telefone}</div>`;
+        if (appData.cliente.email) html += `<div><strong>Email:</strong> ${appData.cliente.email}</div>`;
+        if (appData.cliente.turnos) html += `<div><strong>Turnos:</strong> ${appData.cliente.turnos}</div>`;
+        
+        html += '</div></div>';
+    }
     
-    // Auto-remove após 5 segundos
-    setTimeout(() => {
-        if (errorElement) {
-            errorElement.style.display = 'none';
+    html += '</div>';
+    
+    if (hasData) {
+        previewContainer.innerHTML = html;
+    } else {
+        previewContainer.innerHTML = `
+            <div class="preview-placeholder">
+                <i class="icon-preview placeholder-icon"></i>
+                <h3>Preview da Ficha Técnica</h3>
+                <p>Preencha os dados nas seções anteriores para visualizar a ficha técnica</p>
+            </div>
+        `;
+    }
+}
+
+// ===========================
+// FUNÇÕES DE AÇÃO
+// ===========================
+
+function exportData() {
+    try {
+        collectFormData();
+        const dataStr = JSON.stringify(appData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `ficha-tecnica-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        updateSaveStatus('exported', 'Dados exportados');
+    } catch (error) {
+        showError('Erro ao exportar dados: ' + error.message);
+    }
+}
+
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    appData = { ...appData, ...importedData };
+                    populateForm();
+                    saveData();
+                    updateSaveStatus('imported', 'Dados importados');
+                } catch (error) {
+                    showError('Erro ao importar arquivo: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
         }
-    }, 5000);
+    };
+    
+    input.click();
 }
 
-function showSuccess(message) {
-    console.log('Success:', message);
-    updateSaveStatus('saved', message);
+function clearAllData() {
+    if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+        // Reset dos dados
+        appData = {
+            consultor: { nome: '', telefone: '', email: '' },
+            cliente: { nome: '', cidade: '', contato: '', segmento: '', telefone: '', horario: '', email: '', turnos: '' },
+            maquina: { nome: '', tipoDispositivo: [], tensaoEntrada: '', fase: '', neutro: '', tensaoComando: '', tipoControle: '', tipoPainel: [], abordagem: [] },
+            acionamentos: { quantidade: 0, lista: [] },
+            seguranca: { botoes: {}, controladores: {} },
+            automacao: {},
+            infraestrutura: {},
+            observacoes: {}
+        };
+        
+        // Limpar formulários
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            if (field.type === 'checkbox' || field.type === 'radio') {
+                field.checked = false;
+            } else {
+                field.value = '';
+            }
+        });
+        
+        // Limpar storage
+        localStorage.removeItem('fichaTecnicaData');
+        
+        // Atualizar interface
+        updateUI();
+        updateSaveStatus('cleared', 'Dados limpos');
+        
+        // Ir para primeira seção
+        showSection('consultor');
+    }
+}
+
+function generatePDF() {
+    alert('Funcionalidade de PDF será implementada em breve!\n\nPor enquanto, use o botão "Imprimir" e salve como PDF.');
 }
 
 // ===========================
-// UTILITÁRIOS GLOBAIS
+// UTILITÁRIOS
 // ===========================
 
-/**
- * Formatar telefone automaticamente
- */
 function formatPhone(phone) {
     const cleaned = phone.replace(/\D/g, '');
     
@@ -514,88 +741,35 @@ function formatPhone(phone) {
     }
 }
 
-/**
- * Validar email
- */
 function isValidEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
 }
 
-/**
- * Debounce para otimização de performance
- */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-/**
- * Deep clone de objetos
- */
-function deepClone(obj) {
-    return JSON.parse(JSON.stringify(obj));
-}
-
-/**
- * Verificar se objeto está vazio
- */
-function isEmpty(obj) {
-    if (!obj) return true;
-    if (Array.isArray(obj)) return obj.length === 0;
-    return Object.keys(obj).length === 0;
+function showError(message) {
+    console.error('Error:', message);
+    alert('Erro: ' + message); // Substituir por modal mais elegante posteriormente
 }
 
 // ===========================
-// EXPORTS PARA OUTROS MÓDULOS
+// EXPORTS GLOBAIS
 // ===========================
 
-// Expor funções globais necessárias
+// Expor funções necessárias globalmente
 window.FichaTecnica = {
-    // Estado
     appData,
     appState,
-    
-    // Navegação
     showSection,
-    
-    // Dados
-    collectFormData: () => console.log('collectFormData será implementado em formManager.js'),
-    saveData: () => console.log('saveData será implementado em dataStorage.js'),
-    loadDataFromStorage: () => console.log('loadDataFromStorage será implementado em dataStorage.js'),
-    
-    // Validação
-    validateField: () => console.log('validateField será implementado em validation.js'),
-    validateCurrentSection: () => true, // placeholder
-    
-    // UI
+    collectFormData,
+    saveData,
+    loadDataFromStorage,
+    validateField,
+    validateCurrentSection,
     updateUI,
-    updatePreview: () => console.log('updatePreview será implementado'),
-    
-    // Acionamentos
-    refreshAcionamentos: () => console.log('refreshAcionamentos será implementado'),
-    
-    // Campos condicionais
-    setupConditionalFields: () => console.log('setupConditionalFields será implementado'),
-    updateConditionalFields: () => console.log('updateConditionalFields será implementado'),
-    
-    // Dispositivos
-    setupDeviceHandlers: () => console.log('setupDeviceHandlers será implementado'),
-    setupDynamicAcionamentos: () => console.log('setupDynamicAcionamentos será implementado'),
-    
-    // Utilitários
+    updatePreview,
     formatPhone,
     isValidEmail,
-    debounce,
-    showError,
-    showSuccess
+    showError
 };
 
-console.log('📦 app.js carregado - Core da aplicação pronto');
+console.log('📦 app.js carregado e compatível com HTML');
