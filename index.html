@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de geração de fichas técnicas profissionais para máquinas industriais">
+    <meta name="keywords" content="ficha técnica, máquinas, automação, segurança, NR10, NR12">
+    <meta name="author" content="Ficha Técnica Digital">
+    
+    <title>Ficha Técnica Digital - Sistema Profissional</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/print.css" media="print">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/icons/favicon.png">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ficha Técnica Digital">
+</head>
+
+<body>
+    <!-- Container Principal -->
+    <div class="app-container" id="appContainer">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <img src="assets/images/logo.png" alt="Logo" class="logo" id="logoImg">
+                    <div class="brand-text">
+                        <h1>Ficha Técnica Digital</h1>
+                        <p>Sistema de geração de fichas técnicas profissionais</p>
+                    </div>
+                </div>
+                
+                <div class="header-actions">
+                    <button class="btn btn-icon" id="themeToggle" title="Alternar tema">
+                        <i class="icon-theme"></i>
+                    </button>
+                    <button class="btn btn-icon" id="fullscreenToggle" title="Tela cheia">
+                        <i class="icon-fullscreen"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Barra de Status -->
+        <section class="status-bar">
+            <div class="status-content">
+                <div class="save-status" id="saveStatus">
+                    <i class="icon-save"></i>
+                    <span id="saveText">Sistema carregado</span>
+                    <div class="save-indicator" id="saveIndicator"></div>
+                </div>
+                
+                <div class="progress-info">
+                    <span class="progress-text">Progresso:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="exportBtn">
+                        <i class="icon-export"></i>
+                        Exportar
+                    </button>
+                    <button class="btn btn-secondary" id="importBtn">
+                        <i class="icon-import"></i>
+                        Importar
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        <i class="icon-clear"></i>
+                        Limpar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navegação Principal -->
+        <nav class="main-navigation">
+            <div class="nav-container">
+                <div class="nav-tabs" id="navTabs">
+                    <button class="nav-tab active" data-section="consultor">
+                        <i class="icon-user"></i>
+                        <span>Consultor</span>
+                    </button>
+                    <button class="nav-tab" data-section="cliente">
+                        <i class="icon-building"></i>
+                        <span>Cliente</span>
+                    </button>
+                    <button class="nav-tab" data-section="maquina">
+                        <i class="icon-gear"></i>
+                        <span>Máquina</span>
+                    </button>
+                    <button class="nav-tab" data-section="acionamentos">
+                        <i class="icon-engine"></i>
+                        <span>Acionamentos</span>
+                    </button>
+                    <button class="nav-tab" data-section="seguranca">
+                        <i class="icon-shield"></i>
+                        <span>Segurança</span>
+                    </button>
+                    <button class="nav-tab" data-section="automacao">
+                        <i class="icon-robot"></i>
+                        <span>Automação</span>
+                    </button>
+                    <button class="nav-tab" data-section="infraestrutura">
+                        <i class="icon-network"></i>
+                        <span>Infraestrutura</span>
+                    </button>
+                    <button class="nav-tab" data-section="observacoes">
+                        <i class="icon-notes"></i>
+                        <span>Observações</span>
+                    </button>
+                    <button class="nav-tab nav-tab-preview" data-section="preview">
+                        <i class="icon-preview"></i>
+                        <span>Visualizar</span>
+                    </button>
+                </div>
+                
+                <!-- Navegação Mobile -->
+                <div class="nav-mobile">
+                    <button class="nav-mobile-toggle" id="navMobileToggle">
+                        <i class="icon-menu"></i>
+                        <span id="currentSectionName">Consultor</span>
+                        <i class="icon-chevron"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            
+            <!-- Seção: Dados do Consultor -->
+            <section class="section active" id="section-consultor" data-section="consultor">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-user"></i>
+                        Dados do Consultor
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 1 de 8</span>
+                    </div>
+                </div>
+                
+                <div class="section-content">
+                    <form class="form-grid" id="consultorForm">
+                        <div class="form-group">
+                            <label for="consultorNome" class="form-label required">
+                                Nome Completo
+                            </label>
+                            <input type="text" id="consultorNome" name="consultorNome" class="form-input" required 
+                                   placeholder="Digite o nome completo do consultor">
+                            <div class="form-error" id="consultorNome-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="consultorTelefone" class="form-label">
+                                Telefone
+                            </label>
+                            <input type="tel" id="consultorTelefone" name="consultorTelefone" class="form-input" 
+                                   placeholder="(00) 00000-0000">
+                            <div class="form-error" id="consultorTelefone-error"></div>
+                        </div>
+                        
+                        <div class="form-group form-group-full">
+                            <label for="consultorEmail" class="form-label">
+                                Email Profissional
+                            </label>
+                            <input type="email" id="consultorEmail" name="consultorEmail" class="form-input" 
+                                   placeholder="email@empresa.com">
+                            <div class="form-error" id="consultorEmail-error"></div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="section-footer">
+                    <button class="btn btn-primary btn-next" data-next="cliente">
+                        Próximo: Dados do Cliente
+                        <i class="icon-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Seção: Dados do Cliente -->
+            <section class="section" id="section-cliente" data-section="cliente">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-building"></i>
+                        Dados do Cliente
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 2 de 8</span>
+                    </div>
+                </div>
+                
+                <div class="section-content">
+                    <form class="form-grid" id="clienteForm">
+                        <div class="form-group">
+                            <label for="clienteNome" class="form-label required">
+                                Nome da Empresa
+                            </label>
+                            <input type="text" id="clienteNome" name="clienteNome" class="form-input" required 
+                                   placeholder="Razão social da empresa">
+                            <div class="form-error" id="clienteNome-error"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteCidade" class="form-label">
+                                Cidade
+                            </label>
+                            <input type="text" id="clienteCidade" name="clienteCidade" class="form-input" 
+                                   placeholder="Cidade - Estado">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteContato" class="form-label">
+                                Contato Técnico / Setor
+                            </label>
+                            <input type="text" id="clienteContato" name="clienteContato" class="form-input" 
+                                   placeholder="Nome do responsável técnico">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteSegmento" class="form-label">
+                                Segmento
+                            </label>
+                            <input type="text" id="clienteSegmento" name="clienteSegmento" class="form-input" 
+                                   placeholder="Ex: Metalurgia, Automobilística">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteTelefone" class="form-label">
+                                Telefone
+                            </label>
+                            <input type="tel" id="clienteTelefone" name="clienteTelefone" class="form-input" 
+                                   placeholder="(00) 0000-0000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteHorario" class="form-label">
+                                Horário de Trabalho
+                            </label>
+                            <input type="text" id="clienteHorario" name="clienteHorario" class="form-input" 
+                                   placeholder="08:00 - 18:00">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteEmail" class="form-label">
+                                Email
+                            </label>
+                            <input type="email" id="clienteEmail" name="clienteEmail" class="form-input" 
+                                   placeholder="contato@empresa.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="clienteTurnos" class="form-label">
+                                Turnos
+                            </label>
+                            <select id="clienteTurnos" name="clienteTurnos" class="form-select">
+                                <option value="">Selecione...</option>
+                                <option value="1">1 turno</option>
+                                <option value="2">2 turnos</option>
+                                <option value="3">3 turnos</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="section-footer">
+                    <button class="btn btn-secondary btn-prev" data-prev="consultor">
+                        <i class="icon-arrow-left"></i>
+                        Anterior
+                    </button>
+                    <button class="btn btn-primary btn-next" data-next="maquina">
+                        Próximo: Dados da Máquina
+                        <i class="icon-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Placeholder para outras seções -->
+            <section class="section" id="section-maquina" data-section="maquina">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-gear"></i>
+                        Dados da Máquina
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 3 de 8</span>
+                    </div>
+                </div>
+                <div class="section-placeholder">
+                    <i class="icon-gear placeholder-icon"></i>
+                    <h3>Em desenvolvimento</h3>
+                    <p>Esta seção será implementada nos próximos arquivos</p>
+                </div>
+            </section>
+
+            <section class="section" id="section-acionamentos" data-section="acionamentos">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-engine"></i>
+                        Acionamentos de Automação
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 4 de 8</span>
+                    </div>
+                </div>
+                <div class="section-placeholder">
+                    <i class="icon-engine placeholder-icon"></i>
+                    <h3>Em desenvolvimento</h3>
+                    <p>Esta seção será implementada nos próximos arquivos</p>
+                </div>
+            </section>
+
+            <section class="section" id="section-seguranca" data-section="seguranca">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-shield"></i>
+                        Dispositivos de Segurança
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 5 de 8</span>
+                    </div>
+                </div>
+                <div class="section-placeholder">
+                    <i class="icon-shield placeholder-icon"></i>
+                    <h3>Em desenvolvimento</h3>
+                    <p>Esta seção será implementada nos próximos arquivos</p>
+                </div>
+            </section>
+
+            <section class="section" id="section-automacao" data-section="automacao">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-robot"></i>
+                        Dispositivos de Automação
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 6 de 8</span>
+                    </div>
+                </div>
+                <div class="section-placeholder">
+                    <i class="icon-robot placeholder-icon"></i>
+                    <h3>Em desenvolvimento</h3>
+                    <p>Esta seção será implementada nos próximos arquivos</p>
+                </div>
+            </section>
+
+            <section class="section" id="section-infraestrutura" data-section="infraestrutura">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-network"></i>
+                        Dados de Infraestrutura
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 7 de 8</span>
+                    </div>
+                </div>
+                <div class="section-placeholder">
+                    <i class="icon-network placeholder-icon"></i>
+                    <h3>Em desenvolvimento</h3>
+                    <p>Esta seção será implementada nos próximos arquivos</p>
+                </div>
+            </section>
+
+            <section class="section" id="section-observacoes" data-section="observacoes">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-notes"></i>
+                        Observações Gerais
+                    </h2>
+                    <div class="section-progress">
+                        <span class="step-counter">Passo 8 de 8</span>
+                    </div>
+                </div>
+                <div class="section-placeholder">
+                    <i class="icon-notes placeholder-icon"></i>
+                    <h3>Em desenvolvimento</h3>
+                    <p>Esta seção será implementada nos próximos arquivos</p>
+                </div>
+            </section>
+
+            <!-- Seção: Preview/Visualização -->
+            <section class="section" id="section-preview" data-section="preview">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="icon-preview"></i>
+                        Visualização da Ficha Técnica
+                    </h2>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary" id="printBtn">
+                            <i class="icon-print"></i>
+                            Imprimir
+                        </button>
+                        <button class="btn btn-primary" id="generatePdfBtn">
+                            <i class="icon-pdf"></i>
+                            Gerar PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="preview-container" id="previewContainer">
+                    <div class="preview-document" id="previewDocument">
+                        <!-- Conteúdo do preview será inserido dinamicamente -->
+                        <div class="preview-placeholder">
+                            <i class="icon-preview placeholder-icon"></i>
+                            <h3>Preview da Ficha Técnica</h3>
+                            <p>Preencha os dados nas seções anteriores para visualizar a ficha técnica</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <span>Ficha Técnica Digital v1.0</span>
+                    <span>|</span>
+                    <span>Sistema desenvolvido para automatizar fichas técnicas</span>
+                </div>
+                <div class="footer-actions">
+                    <button class="btn btn-link" id="helpBtn">
+                        <i class="icon-help"></i>
+                        Ajuda
+                    </button>
+                    <button class="btn btn-link" id="aboutBtn">
+                        <i class="icon-info"></i>
+                        Sobre
+                    </button>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingText">Carregando...</p>
+        </div>
+    </div>
+
+    <!-- Modais -->
+    <div class="modal-overlay" id="modalOverlay">
+        <!-- Modais serão inseridos dinamicamente aqui -->
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/app.js"></script>
+    <script src="js/formManager.js"></script>
+    <script src="js/dataStorage.js"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/pdfGenerator.js"></script>
+    
+    <!-- Bibliotecas externas -->
+    <script src="libs/jspdf.min.js"></script>
+    <script src="libs/html2canvas.min.js"></script>
+
+</body>
+</html>
