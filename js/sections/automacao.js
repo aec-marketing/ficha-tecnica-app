@@ -2,11 +2,12 @@
  * SEÇÃO AUTOMAÇÃO - automacao.js
  * Módulo para dispositivos de automação industrial
  * 
- * Funcionalidades:
- * - 20+ dispositivos de automação
- * - Checkbox + quantidade + observação
- * - Um grupo unificado
- * - Validação e preview
+ * Melhorias implementadas:
+ * - Categorização visual na interface
+ * - Checkbox customizado clicável
+ * - Busca/filtro de dispositivos
+ * - Event delegation para performance
+ * - Validação de limites práticos
  */
 
 (function() {
@@ -15,139 +16,166 @@
     const MODULE_NAME = 'automacao';
     const SECTION_ID = 'section-automacao';
 
-    // Configuração dos dispositivos de automação
+    // Configuração dos dispositivos de automação ORGANIZADOS POR CATEGORIA
     const AUTOMACAO_CONFIG = {
-        grupo: {
-            id: 'dispositivos',
-            nome: '🤖 Dispositivos de Automação',
-            icon: '🤖',
-            dispositivos: [
-                { 
-                    id: 'botaoPulso', 
-                    nome: 'Botão de Pulso', 
-                    descricao: 'Botão momentâneo para comandos',
-                    icon: '🔘'
-                },
-                { 
-                    id: 'pedaleiraOperacao', 
-                    nome: 'Pedaleira de Operação', 
-                    descricao: 'Comando de pé operacional',
-                    icon: '🦶'
-                },
-                { 
-                    id: 'botaoDuplo', 
-                    nome: 'Botão Duplo Liga/Desliga', 
-                    descricao: 'Botão com dupla função',
-                    icon: '⚫'
-                },
-                { 
-                    id: 'seletoraChave', 
-                    nome: 'Seletora com Chave', 
-                    descricao: 'Chave seletora com segurança',
-                    icon: '🔐'
-                },
-                { 
-                    id: 'seletora2pos', 
-                    nome: 'Seletora 2 Posições', 
-                    descricao: 'Chave de 2 posições',
-                    icon: '🔀'
-                },
-                { 
-                    id: 'seletora3pos', 
-                    nome: 'Seletora 3 Posições', 
-                    descricao: 'Chave de 3 posições',
-                    icon: '🔄'
-                },
-                { 
-                    id: 'sensorUltrassonico', 
-                    nome: 'Sensor Ultrassônico', 
-                    descricao: 'Sensor de distância por ultrassom',
-                    icon: '📡'
-                },
-                { 
-                    id: 'sensorLaser', 
-                    nome: 'Sensor Laser', 
-                    descricao: 'Sensor de distância a laser',
-                    icon: '🔴'
-                },
-                { 
-                    id: 'sensorCapacitivo', 
-                    nome: 'Sensor Capacitivo', 
-                    descricao: 'Sensor de proximidade capacitivo',
-                    icon: '⚡'
-                },
-                { 
-                    id: 'sensorFotoBarreira', 
-                    nome: 'Sensor Fotoelétrico Barreira', 
-                    descricao: 'Sensor de barreira de luz',
-                    icon: '💡'
-                },
-                { 
-                    id: 'sensorFoto', 
-                    nome: 'Sensor Fotoelétrico', 
-                    descricao: 'Sensor óptico',
-                    icon: '🔆'
-                },
-                { 
-                    id: 'sensorIndutivo', 
-                    nome: 'Sensor Indutivo', 
-                    descricao: 'Sensor de proximidade indutivo',
-                    icon: '🧲'
-                },
-                { 
-                    id: 'sensorRadar', 
-                    nome: 'Sensor Radar', 
-                    descricao: 'Sensor de movimento por radar',
-                    icon: '📻'
-                },
-                { 
-                    id: 'colunaLuminosa', 
-                    nome: 'Coluna Luminosa (TL50/CL50)', 
-                    descricao: 'Torre de sinalização',
-                    icon: '🚨'
-                },
-                { 
-                    id: 'barreiraLuminosa', 
-                    nome: 'Barreira Luminosa (WLS)', 
-                    descricao: 'Barreira de luz de segurança',
-                    icon: '🚧'
-                },
-                { 
-                    id: 'sistemaVisao', 
-                    nome: 'Sistema de Visão', 
-                    descricao: 'Câmera industrial para inspeção',
-                    icon: '📷'
-                },
-                { 
-                    id: 'clpAutomacao', 
-                    nome: 'CLP de Automação', 
-                    descricao: 'Controlador lógico programável',
-                    icon: '💻'
-                },
-                { 
-                    id: 'remotaIO', 
-                    nome: 'Remota de I/O', 
-                    descricao: 'Módulo remoto de entradas/saídas',
-                    icon: '🔌'
-                },
-                { 
-                    id: 'interfaceHMI', 
-                    nome: 'Interface HMI', 
-                    descricao: 'Interface homem-máquina',
-                    icon: '🖥️'
-                },
-                { 
-                    id: 'conversorFreq', 
-                    nome: 'Conversor de Frequência', 
-                    descricao: 'Inversor para controle de motores',
-                    icon: '🔧'
-                }
-            ]
-        }
+        categorias: [
+            {
+                id: 'comandos',
+                nome: '🎛️ Comandos e Controles',
+                icon: '🎛️',
+                dispositivos: [
+                    { 
+                        id: 'botaoPulso', 
+                        nome: 'Botão de Pulso', 
+                        descricao: 'Botão momentâneo para comandos',
+                        icon: '🔘'
+                    },
+                    { 
+                        id: 'pedaleiraOperacao', 
+                        nome: 'Pedaleira de Operação', 
+                        descricao: 'Comando de pé operacional',
+                        icon: '🦶'
+                    },
+                    { 
+                        id: 'botaoDuplo', 
+                        nome: 'Botão Duplo Liga/Desliga', 
+                        descricao: 'Botão com dupla função',
+                        icon: '⚫'
+                    },
+                    { 
+                        id: 'seletoraChave', 
+                        nome: 'Seletora com Chave', 
+                        descricao: 'Chave seletora com segurança',
+                        icon: '🔐'
+                    },
+                    { 
+                        id: 'seletora2pos', 
+                        nome: 'Seletora 2 Posições', 
+                        descricao: 'Chave de 2 posições',
+                        icon: '🔀'
+                    },
+                    { 
+                        id: 'seletora3pos', 
+                        nome: 'Seletora 3 Posições', 
+                        descricao: 'Chave de 3 posições',
+                        icon: '🔄'
+                    }
+                ]
+            },
+            {
+                id: 'sensores',
+                nome: '📡 Sensores',
+                icon: '📡',
+                dispositivos: [
+                    { 
+                        id: 'sensorUltrassonico', 
+                        nome: 'Sensor Ultrassônico', 
+                        descricao: 'Sensor de distância por ultrassom',
+                        icon: '📡'
+                    },
+                    { 
+                        id: 'sensorLaser', 
+                        nome: 'Sensor Laser', 
+                        descricao: 'Sensor de distância a laser',
+                        icon: '🔴'
+                    },
+                    { 
+                        id: 'sensorCapacitivo', 
+                        nome: 'Sensor Capacitivo', 
+                        descricao: 'Sensor de proximidade capacitivo',
+                        icon: '⚡'
+                    },
+                    { 
+                        id: 'sensorFotoBarreira', 
+                        nome: 'Sensor Fotoelétrico Barreira', 
+                        descricao: 'Sensor de barreira de luz',
+                        icon: '💡'
+                    },
+                    { 
+                        id: 'sensorFoto', 
+                        nome: 'Sensor Fotoelétrico', 
+                        descricao: 'Sensor óptico',
+                        icon: '🔆'
+                    },
+                    { 
+                        id: 'sensorIndutivo', 
+                        nome: 'Sensor Indutivo', 
+                        descricao: 'Sensor de proximidade indutivo',
+                        icon: '🧲'
+                    },
+                    { 
+                        id: 'sensorRadar', 
+                        nome: 'Sensor Radar', 
+                        descricao: 'Sensor de movimento por radar',
+                        icon: '📻'
+                    }
+                ]
+            },
+            {
+                id: 'sinalizacao',
+                nome: '🚨 Sinalização',
+                icon: '🚨',
+                dispositivos: [
+                    { 
+                        id: 'colunaLuminosa', 
+                        nome: 'Coluna Luminosa (TL50/CL50)', 
+                        descricao: 'Torre de sinalização',
+                        icon: '🚨'
+                    },
+                    { 
+                        id: 'barreiraLuminosa', 
+                        nome: 'Barreira Luminosa (WLS)', 
+                        descricao: 'Barreira de luz de segurança',
+                        icon: '🚧'
+                    }
+                ]
+            },
+            {
+                id: 'controle',
+                nome: '💻 Sistemas de Controle',
+                icon: '💻',
+                dispositivos: [
+                    { 
+                        id: 'sistemaVisao', 
+                        nome: 'Sistema de Visão', 
+                        descricao: 'Câmera industrial para inspeção',
+                        icon: '📷'
+                    },
+                    { 
+                        id: 'clpAutomacao', 
+                        nome: 'CLP de Automação', 
+                        descricao: 'Controlador lógico programável',
+                        icon: '💻'
+                    },
+                    { 
+                        id: 'remotaIO', 
+                        nome: 'Remota de I/O', 
+                        descricao: 'Módulo remoto de entradas/saídas',
+                        icon: '🔌'
+                    },
+                    { 
+                        id: 'interfaceHMI', 
+                        nome: 'Interface HMI', 
+                        descricao: 'Interface homem-máquina',
+                        icon: '🖥️'
+                    },
+                    { 
+                        id: 'conversorFreq', 
+                        nome: 'Conversor de Frequência', 
+                        descricao: 'Inversor para controle de motores',
+                        icon: '🔧'
+                    }
+                ]
+            }
+        ]
     };
 
     // Dados padrão
     const DEFAULT_DATA = {};
+    
+    // Configurações do módulo
+    const MAX_DEVICES_ALERT = 15; // Alerta se usuário selecionar muitos dispositivos
+    const MAX_QUANTITY_PER_DEVICE = 50; // Limite prático por dispositivo
 
     // ===========================
     // CLASSE PRINCIPAL DO MÓDULO
@@ -158,6 +186,7 @@
             this.isInitialized = false;
             this.sectionElement = null;
             this.activeDevices = new Map();
+            this.searchInput = null;
         }
 
         init() {
@@ -186,49 +215,70 @@
         }
 
         createSectionHTML() {
-            const grupo = AUTOMACAO_CONFIG.grupo;
-            let dispositivosHTML = '';
+            let categoriasHTML = '';
 
-            grupo.dispositivos.forEach(dispositivo => {
-                dispositivosHTML += `
-                    <div class="device-item" data-device="${dispositivo.id}">
-                        <div class="device-checkbox-container">
-                            <input type="checkbox" 
-                                   id="device-${dispositivo.id}" 
-                                   class="device-checkbox" 
-                                   data-device="${dispositivo.id}">
-                            <div class="device-checkbox-custom">
-                                <span class="device-icon">${dispositivo.icon}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="device-info">
-                            <label for="device-${dispositivo.id}" class="device-label">
-                                ${dispositivo.nome}
-                            </label>
-                            <p class="device-description">${dispositivo.descricao}</p>
-                        </div>
-                        
-                        <div class="device-controls">
-                            <div class="device-quantity">
-                                <label for="qty-${dispositivo.id}" class="control-label">Qtd</label>
-                                <input type="number" 
-                                       id="qty-${dispositivo.id}" 
-                                       class="quantity-input" 
-                                       min="0" 
-                                       max="99" 
-                                       placeholder="0"
-                                       disabled>
+            AUTOMACAO_CONFIG.categorias.forEach(categoria => {
+                let dispositivosHTML = '';
+
+                categoria.dispositivos.forEach(dispositivo => {
+                    dispositivosHTML += `
+                        <div class="device-item" data-device="${dispositivo.id}" data-categoria="${categoria.id}">
+                            <div class="device-checkbox-container">
+                                <input type="checkbox" 
+                                       id="device-${dispositivo.id}" 
+                                       class="device-checkbox" 
+                                       data-device="${dispositivo.id}">
+                                <div class="device-checkbox-custom">
+                                    <span class="device-icon">${dispositivo.icon}</span>
+                                </div>
                             </div>
                             
-                            <div class="device-observation">
-                                <label for="obs-${dispositivo.id}" class="control-label">Observações</label>
-                                <input type="text" 
-                                       id="obs-${dispositivo.id}" 
-                                       class="observation-input" 
-                                       placeholder="Detalhes específicos..."
-                                       disabled>
+                            <div class="device-info">
+                                <label for="device-${dispositivo.id}" class="device-label">
+                                    ${dispositivo.nome}
+                                </label>
+                                <p class="device-description">${dispositivo.descricao}</p>
                             </div>
+                            
+                            <div class="device-controls">
+                                <div class="device-quantity">
+                                    <label for="qty-${dispositivo.id}" class="control-label">Qtd</label>
+                                    <input type="number" 
+                                           id="qty-${dispositivo.id}" 
+                                           class="quantity-input" 
+                                           min="0" 
+                                           max="${MAX_QUANTITY_PER_DEVICE}" 
+                                           placeholder="0"
+                                           disabled>
+                                </div>
+                                
+                                <div class="device-observation">
+                                    <label for="obs-${dispositivo.id}" class="control-label">Observações</label>
+                                    <input type="text" 
+                                           id="obs-${dispositivo.id}" 
+                                           class="observation-input" 
+                                           placeholder="Detalhes específicos..."
+                                           disabled>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                categoriasHTML += `
+                    <div class="device-category" data-categoria="${categoria.id}">
+                        <div class="category-header">
+                            <h4 class="category-title">
+                                <span class="category-icon">${categoria.icon}</span>
+                                ${categoria.nome}
+                            </h4>
+                            <div class="category-counter">
+                                <span class="counter-text">0 selecionados</span>
+                            </div>
+                        </div>
+                        
+                        <div class="devices-grid-categoria">
+                            ${dispositivosHTML}
                         </div>
                     </div>
                 `;
@@ -265,22 +315,25 @@
                         </div>
                     </div>
 
-                    <div class="devices-container">
-                        <div class="device-group-single">
-                            <div class="group-header-single">
-                                <h3 class="group-title-single">
-                                    <span class="group-icon">${grupo.icon}</span>
-                                    ${grupo.nome}
-                                </h3>
-                                <div class="group-counter">
-                                    <span class="counter-text">0 selecionados</span>
-                                </div>
-                            </div>
-                            
-                            <div class="devices-grid-automacao">
-                                ${dispositivosHTML}
-                            </div>
+                    <!-- Busca e Filtros -->
+                    <div class="search-filter-container">
+                        <div class="search-box">
+                            <input type="text" id="deviceSearch" class="search-input" 
+                                   placeholder="🔍 Buscar dispositivos..." autocomplete="off">
+                            <button class="search-clear" id="searchClear" style="display: none;">✕</button>
                         </div>
+                        
+                        <div class="filter-chips">
+                            <button class="filter-chip active" data-filter="all">Todos</button>
+                            <button class="filter-chip" data-filter="comandos">Comandos</button>
+                            <button class="filter-chip" data-filter="sensores">Sensores</button>
+                            <button class="filter-chip" data-filter="sinalizacao">Sinalização</button>
+                            <button class="filter-chip" data-filter="controle">Controle</button>
+                        </div>
+                    </div>
+
+                    <div class="devices-container">
+                        ${categoriasHTML}
                     </div>
                 </div>
                 
@@ -300,34 +353,131 @@
         }
 
         setupEventListeners() {
-            // Event listeners para todos os checkboxes
-            document.querySelectorAll('.device-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => {
-                    this.handleDeviceToggle(e.target);
+            // EVENT DELEGATION para melhor performance
+            const devicesContainer = this.sectionElement.querySelector('.devices-container');
+            if (devicesContainer) {
+                devicesContainer.addEventListener('click', this.handleDeviceContainerClick.bind(this));
+                devicesContainer.addEventListener('input', this.handleDeviceContainerInput.bind(this));
+                devicesContainer.addEventListener('change', this.handleDeviceContainerChange.bind(this));
+            }
+
+            // Checkbox customizado clicável (IGUAL AO SEGURANÇA)
+            document.querySelectorAll('.device-checkbox-custom').forEach(customCheckbox => {
+                customCheckbox.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const realCheckbox = customCheckbox.parentElement.querySelector('.device-checkbox');
+                    if (realCheckbox) {
+                        realCheckbox.checked = !realCheckbox.checked;
+                        this.handleDeviceToggle(realCheckbox);
+                    }
                 });
             });
 
-            // Event listeners para inputs de quantidade
-            document.querySelectorAll('.quantity-input').forEach(input => {
-                input.addEventListener('input', () => {
-                    this.updateSummaryStats();
-                    this.handleFieldChange();
-                });
-                
-                input.addEventListener('change', () => {
-                    this.validateQuantityInput(input);
-                });
-            });
-
-            // Event listeners para observações
-            document.querySelectorAll('.observation-input').forEach(input => {
-                input.addEventListener('input', () => {
-                    this.handleFieldChange();
-                });
-            });
+            // Busca e filtros
+            this.setupSearchAndFilters();
 
             // Navegação
             this.setupNavigationListeners();
+        }
+
+        handleDeviceContainerClick(e) {
+            // Checkbox normal
+            if (e.target.classList.contains('device-checkbox')) {
+                this.handleDeviceToggle(e.target);
+            }
+        }
+
+        handleDeviceContainerInput(e) {
+            // Inputs de quantidade e observação
+            if (e.target.classList.contains('quantity-input') || 
+                e.target.classList.contains('observation-input')) {
+                this.updateSummaryStats();
+                this.handleFieldChange();
+            }
+        }
+
+        handleDeviceContainerChange(e) {
+            // Validação de quantidade
+            if (e.target.classList.contains('quantity-input')) {
+                this.validateQuantityInput(e.target);
+            }
+        }
+
+        setupSearchAndFilters() {
+            // Busca
+            this.searchInput = document.getElementById('deviceSearch');
+            const searchClear = document.getElementById('searchClear');
+
+            if (this.searchInput) {
+                this.searchInput.addEventListener('input', (e) => {
+                    this.handleSearch(e.target.value);
+                    searchClear.style.display = e.target.value ? 'block' : 'none';
+                });
+            }
+
+            if (searchClear) {
+                searchClear.addEventListener('click', () => {
+                    this.searchInput.value = '';
+                    this.handleSearch('');
+                    searchClear.style.display = 'none';
+                });
+            }
+
+            // Filtros por categoria
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    this.handleFilter(e.target.getAttribute('data-filter'));
+                    
+                    // Atualizar UI dos chips
+                    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+        }
+
+        handleSearch(searchTerm) {
+            const term = searchTerm.toLowerCase().trim();
+            const deviceItems = document.querySelectorAll('.device-item');
+
+            deviceItems.forEach(item => {
+                const label = item.querySelector('.device-label')?.textContent.toLowerCase() || '';
+                const description = item.querySelector('.device-description')?.textContent.toLowerCase() || '';
+                
+                const matches = label.includes(term) || description.includes(term);
+                item.style.display = matches ? 'flex' : 'none';
+            });
+
+            // Esconder categorias vazias
+            this.updateCategoryVisibility();
+        }
+
+        handleFilter(filterCategory) {
+            const categories = document.querySelectorAll('.device-category');
+
+            categories.forEach(category => {
+                if (filterCategory === 'all') {
+                    category.style.display = 'block';
+                } else {
+                    const categoryId = category.getAttribute('data-categoria');
+                    category.style.display = categoryId === filterCategory ? 'block' : 'none';
+                }
+            });
+
+            // Limpar busca ao filtrar
+            if (this.searchInput) {
+                this.searchInput.value = '';
+                document.getElementById('searchClear').style.display = 'none';
+                this.handleSearch('');
+            }
+        }
+
+        updateCategoryVisibility() {
+            document.querySelectorAll('.device-category').forEach(category => {
+                const visibleDevices = category.querySelectorAll('.device-item[style*="flex"], .device-item:not([style])');
+                category.style.display = visibleDevices.length > 0 ? 'block' : 'none';
+            });
         }
 
         setupNavigationListeners() {
@@ -376,6 +526,11 @@
                     observation: observationInput.value
                 });
                 
+                // Alerta se muitos dispositivos
+                if (this.activeDevices.size >= MAX_DEVICES_ALERT) {
+                    this.showDeviceCountWarning();
+                }
+                
             } else {
                 // Desativar dispositivo
                 deviceItem.classList.remove('active');
@@ -387,7 +542,7 @@
                 this.activeDevices.delete(deviceId);
             }
 
-            this.updateGroupCounter();
+            this.updateCategoryCounters();
             this.updateSummaryStats();
             this.handleFieldChange();
         }
@@ -397,8 +552,9 @@
             
             if (value < 1) {
                 input.value = '1';
-            } else if (value > 99) {
-                input.value = '99';
+            } else if (value > MAX_QUANTITY_PER_DEVICE) {
+                input.value = MAX_QUANTITY_PER_DEVICE;
+                this.showQuantityLimitWarning();
             }
             
             // Atualizar dados ativos
@@ -410,13 +566,18 @@
             }
         }
 
-        updateGroupCounter() {
-            const activeDevices = document.querySelectorAll('.device-item.active').length;
-            const counterText = document.querySelector('.counter-text');
-            
-            if (counterText) {
-                counterText.textContent = `${activeDevices} selecionado${activeDevices !== 1 ? 's' : ''}`;
-            }
+        updateCategoryCounters() {
+            AUTOMACAO_CONFIG.categorias.forEach(categoria => {
+                const categoryElement = document.querySelector(`[data-categoria="${categoria.id}"]`);
+                if (!categoryElement) return;
+
+                const activeDevices = categoryElement.querySelectorAll('.device-item.active').length;
+                const counterText = categoryElement.querySelector('.counter-text');
+                
+                if (counterText) {
+                    counterText.textContent = `${activeDevices} selecionado${activeDevices !== 1 ? 's' : ''}`;
+                }
+            });
         }
 
         updateSummaryStats() {
@@ -443,6 +604,22 @@
             }
         }
 
+        showDeviceCountWarning() {
+            const message = `Você selecionou ${this.activeDevices.size} dispositivos. ` +
+                          `Certifique-se de que todos são realmente necessários para evitar orçamentos desnecessariamente altos.`;
+            
+            // Mostra warning sem bloquear o usuário
+            console.warn('📊 Muitos dispositivos selecionados:', this.activeDevices.size);
+            
+            // Poderia mostrar um toast/notification aqui
+            // this.showToast(message, 'warning');
+        }
+
+        showQuantityLimitWarning() {
+            console.warn(`⚠️ Quantidade limitada a ${MAX_QUANTITY_PER_DEVICE} por dispositivo`);
+            // Poderia mostrar um toast/notification aqui
+        }
+
         // ===========================
         // API PARA O CORE
         // ===========================
@@ -450,20 +627,23 @@
         collectData() {
             const data = {};
 
-            AUTOMACAO_CONFIG.grupo.dispositivos.forEach(dispositivo => {
-                const checkbox = document.getElementById(`device-${dispositivo.id}`);
-                
-                if (checkbox && checkbox.checked) {
-                    const quantityInput = document.getElementById(`qty-${dispositivo.id}`);
-                    const observationInput = document.getElementById(`obs-${dispositivo.id}`);
+            AUTOMACAO_CONFIG.categorias.forEach(categoria => {
+                categoria.dispositivos.forEach(dispositivo => {
+                    const checkbox = document.getElementById(`device-${dispositivo.id}`);
                     
-                    data[dispositivo.id] = {
-                        nome: dispositivo.nome,
-                        quantity: quantityInput.value || '1',
-                        observation: observationInput.value.trim() || '',
-                        icon: dispositivo.icon
-                    };
-                }
+                    if (checkbox && checkbox.checked) {
+                        const quantityInput = document.getElementById(`qty-${dispositivo.id}`);
+                        const observationInput = document.getElementById(`obs-${dispositivo.id}`);
+                        
+                        data[dispositivo.id] = {
+                            nome: dispositivo.nome,
+                            quantity: quantityInput.value || '1',
+                            observation: observationInput.value.trim() || '',
+                            icon: dispositivo.icon,
+                            categoria: categoria.nome
+                        };
+                    }
+                });
             });
 
             return data;
@@ -510,7 +690,7 @@
             });
 
             // Atualizar contadores
-            this.updateGroupCounter();
+            this.updateCategoryCounters();
             this.updateSummaryStats();
             
             console.log(`🤖 Dados carregados para ${MODULE_NAME}`);
@@ -556,19 +736,14 @@
             `;
 
             // Agrupar por categoria para melhor organização
-            const categorias = {
-                'Comandos': ['botaoPulso', 'pedaleiraOperacao', 'botaoDuplo', 'seletoraChave', 'seletora2pos', 'seletora3pos'],
-                'Sensores': ['sensorUltrassonico', 'sensorLaser', 'sensorCapacitivo', 'sensorFotoBarreira', 'sensorFoto', 'sensorIndutivo', 'sensorRadar'],
-                'Sinalização': ['colunaLuminosa', 'barreiraLuminosa'],
-                'Controle': ['clpAutomacao', 'remotaIO', 'interfaceHMI', 'conversorFreq', 'sistemaVisao']
-            };
-
-            Object.entries(categorias).forEach(([categoria, dispositivos]) => {
-                const dispositivosCategoria = dispositivos.filter(id => data[id]);
+            AUTOMACAO_CONFIG.categorias.forEach(categoria => {
+                const dispositivosCategoria = categoria.dispositivos
+                    .map(d => d.id)
+                    .filter(id => data[id]);
                 
                 if (dispositivosCategoria.length > 0) {
                     html += `<div class="preview-category">
-                        <h5>${categoria}</h5>`;
+                        <h5>${categoria.icon} ${categoria.nome}</h5>`;
                     
                     dispositivosCategoria.forEach(deviceId => {
                         const device = data[deviceId];
@@ -642,8 +817,20 @@
             this.activeDevices.clear();
 
             // Atualizar contadores
-            this.updateGroupCounter();
+            this.updateCategoryCounters();
             this.updateSummaryStats();
+
+            // Resetar busca e filtros
+            if (this.searchInput) {
+                this.searchInput.value = '';
+                document.getElementById('searchClear').style.display = 'none';
+            }
+            
+            // Resetar filtro para "Todos"
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.getAttribute('data-filter') === 'all');
+            });
+            this.handleFilter('all');
         }
     }
 
