@@ -1,0 +1,546 @@
+/**
+ * ESTILOS ESPECÍFICOS - SEÇÃO ACIONAMENTOS
+ * Versão limpa e funcional - SEM duplicações
+ */
+
+/* ===========================
+   SELETOR DE QUANTIDADE
+   =========================== */
+
+.quantity-selector {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.1));
+    border: 2px solid rgba(37, 99, 235, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.form-select-large {
+    font-size: 18px;
+    padding: 16px 20px;
+    min-height: 56px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #1e293b;
+}
+
+.form-select-large:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    transform: translateY(-2px);
+}
+
+.form-help {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* ===========================
+   CONTAINER DE ACIONAMENTOS
+   =========================== */
+
+.acionamentos-container {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+}
+
+.acionamentos-container.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.container-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.container-header h3 {
+    margin: 0;
+    color: #2563eb;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.progress-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    min-width: 150px;
+}
+
+.progress-indicator span {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.progress-bar-mini {
+    width: 100%;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill-mini {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #10b981);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+/* ===========================
+   LISTA DE ACIONAMENTOS
+   =========================== */
+
+.acionamentos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.acionamento-item {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.5s ease;
+}
+
+.acionamento-item.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ===========================
+   CARD DE ACIONAMENTO
+   =========================== */
+
+.acionamento-card {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.acionamento-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+    transform: translateY(-4px);
+}
+
+.acionamento-card.error {
+    border-color: #ef4444;
+    animation: shake 0.6s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/* ===========================
+   HEADER DO ACIONAMENTO
+   =========================== */
+
+.acionamento-header {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.acionamento-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1));
+    transform: translateX(100%);
+    transition: transform 0.6s ease;
+}
+
+.acionamento-card:hover .acionamento-header::before {
+    transform: translateX(-100%);
+}
+
+.acionamento-badge {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.acionamento-card:hover .acionamento-badge {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.1);
+}
+
+.badge-number {
+    color: white;
+    font-weight: 700;
+}
+
+.acionamento-header h4 {
+    margin: 0;
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ===========================
+   STATUS DO ACIONAMENTO
+   =========================== */
+
+.acionamento-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.acionamento-status.complete {
+    background: rgba(16, 185, 129, 0.9);
+    color: white;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.status-indicator.incomplete {
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.complete {
+    background: white;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ===========================
+   FORMULÁRIO DO ACIONAMENTO
+   =========================== */
+
+.acionamento-form {
+    padding: 24px;
+    background: #ffffff;
+}
+
+.acionamento-form .form-group {
+    margin-bottom: 20px;
+}
+
+.acionamento-form .form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* FORÇA FUNDO BRANCO NOS INPUTS DENTRO DOS ACIONAMENTOS */
+.acionamento-form .form-input,
+.acionamento-form .form-select {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border: 2px solid #e2e8f0;
+}
+
+.acionamento-form .form-input:focus,
+.acionamento-form .form-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.acionamento-form .form-label {
+    color: #1e293b !important;
+    font-weight: 600;
+}
+
+/* ===========================
+   CAMPOS CONDICIONAIS
+   =========================== */
+
+.conditional-fields {
+    margin-top: 20px;
+}
+
+.conditional-section {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.08));
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    opacity: 1;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+}
+
+.conditional-section.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.conditional-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #2563eb, #10b981);
+}
+
+.conditional-section h5 {
+    margin: 0 0 16px 0;
+    color: #2563eb;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.conditional-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+/* FORÇA FUNDO BRANCO NOS CAMPOS CONDICIONAIS */
+.conditional-section .form-input,
+.conditional-section .form-select {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+.conditional-section .form-label {
+    color: #1e293b !important;
+}
+
+/* ===========================
+   ESTADOS ESPECÍFICOS POR TIPO
+   =========================== */
+
+/* Motor - Azul */
+.acionamento-card[data-tipo="Motor"] .acionamento-header {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+
+.acionamento-card[data-tipo="Motor"] .conditional-section {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.08));
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+/* Hidráulico - Verde */
+.acionamento-card[data-tipo="Hidráulico"] .acionamento-header {
+    background: linear-gradient(135deg, #059669, #10b981);
+}
+
+.acionamento-card[data-tipo="Hidráulico"] .conditional-section {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.08));
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.acionamento-card[data-tipo="Hidráulico"] .conditional-section::before {
+    background: linear-gradient(180deg, #059669, #10b981);
+}
+
+/* Pneumático - Azul claro */
+.acionamento-card[data-tipo="Pneumático"] .acionamento-header {
+    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+}
+
+.acionamento-card[data-tipo="Pneumático"] .conditional-section {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(2, 132, 199, 0.08));
+    border-color: rgba(14, 165, 233, 0.2);
+}
+
+.acionamento-card[data-tipo="Pneumático"] .conditional-section::before {
+    background: linear-gradient(180deg, #0284c7, #0ea5e9);
+}
+
+/* ===========================
+   BOTÃO NEXT COM ESTADO
+   =========================== */
+
+.btn-next.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-next.btn-disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ===========================
+   PREVIEW DE ACIONAMENTOS
+   =========================== */
+
+.preview-acionamento {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 4px solid #2563eb;
+}
+
+.preview-acionamento h4 {
+    margin: 0 0 12px 0;
+    color: #2563eb;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.preview-summary {
+    background: rgba(37, 99, 235, 0.1);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-left: 4px solid #2563eb;
+}
+
+/* ===========================
+   RESPONSIVIDADE
+   =========================== */
+
+@media (max-width: 768px) {
+    .container-header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    .progress-indicator {
+        align-items: center;
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .acionamento-header {
+        padding: 12px 16px;
+    }
+    
+    .acionamento-header h4 {
+        font-size: 1rem;
+    }
+    
+    .acionamento-badge {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+    
+    .acionamento-form {
+        padding: 16px;
+        background: #ffffff;
+    }
+    
+    .conditional-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .quantity-selector {
+        padding: 16px;
+    }
+    
+    .form-select-large {
+        font-size: 16px;
+        padding: 12px 16px;
+        min-height: 48px;
+    }
+    
+    .acionamento-item {
+        margin-bottom: 16px;
+    }
+    
+    .acionamento-header {
+        gap: 12px;
+    }
+    
+    .acionamento-status {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    
+    .conditional-section {
+        padding: 16px;
+    }
+    
+    .conditional-section h5 {
+        font-size: 14px;
+    }
+}
+
+/* ===========================
+   ANIMAÇÕES DE TRANSIÇÃO
+   =========================== */
+
+.section[data-section="acionamentos"].active .acionamento-item {
+    animation: slideInFromRight 0.6s ease forwards;
+}
+
+.section[data-section="acionamentos"].active .acionamento-item:nth-child(1) { animation-delay: 0.1s; }
+.section[data-section="acionamentos"].active .acionamento-item:nth-child(2) { animation-delay: 0.2s; }
+.section[data-section="acionamentos"].active .acionamento-item:nth-child(3) { animation-delay: 0.3s; }
+.section[data-section="acionamentos"].active .acionamento-item:nth-child(4) { animation-delay: 0.4s; }
+.section[data-section="acionamentos"].active .acionamento-item:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

@@ -1,66 +1,226 @@
 /**
  * FICHA TÉCNICA DIGITAL - APP.JS
- * Lógica principal da aplicação
+ * Core verdadeiramente modular - ZERO dependências de seções específicas
  * 
- * Versão compatível com index.html fornecido
+ * Princípios:
+ * - Core nunca conhece seções específicas
+ * - Módulos se auto-registram com suas capacidades
+ * - Comunicação 100% por eventos
+ * - Extensível sem modificar core
  */
 
 // ===========================
 // ESTADO GLOBAL DA APLICAÇÃO
 // ===========================
 
-let appData = {
-    consultor: {
-        nome: '',
-        telefone: '',
-        email: ''
-    },
-    cliente: {
-        nome: '',
-        cidade: '',
-        contato: '',
-        segmento: '',
-        telefone: '',
-        horario: '',
-        email: '',
-        turnos: ''
-    },
-    maquina: {
-        nome: '',
-        tipoDispositivo: [],
-        tensaoEntrada: '',
-        fase: '',
-        neutro: '',
-        tensaoComando: '',
-        tipoControle: '',
-        tipoPainel: [],
-        abordagem: []
-    },
-    acionamentos: {
-        quantidade: 0,
-        lista: []
-    },
-    seguranca: {
-        botoes: {},
-        controladores: {}
-    },
-    automacao: {},
-    infraestrutura: {},
-    observacoes: {}
-};
-
-// Estado da aplicação
+let appData = {};
 let appState = {
     currentSection: 'consultor',
     isLoading: false,
     hasUnsavedChanges: false,
     lastSaveTime: null,
-    validationErrors: {}
+    validationErrors: {},
+    registeredSections: new Map()
 };
 
 // Timeouts para auto-save
 let saveTimeout;
 let uiUpdateTimeout;
+
+// ===========================
+// SISTEMA MODULAR PURO
+// ===========================
+
+const moduleEvents = new EventTarget();
+const loadedModules = new Map();
+
+// API Global - Núcleo sem conhecimento de seções específicas
+window.FichaTecnica = {
+    // Estado da aplicação
+    appData,
+    appState,
+    
+    // Sistema de eventos
+    events: moduleEvents,
+    modules: loadedModules,
+    
+    // Core functions
+    showSection,
+    saveData,
+    loadDataFromStorage,
+    updateUI,
+    formatPhone,
+    isValidEmail,
+    showError,
+    
+    // ===========================
+    // API PARA MÓDULOS
+    // ===========================
+    
+    /**
+     * Registro completo de módulo com todas suas capacidades
+     */
+    registerModule(config) {
+        const {
+            name,
+            instance,
+            hasForm = false,
+            hasPreview = false,
+            hasValidation = false,
+            isSimple = false,
+            fields = [],
+            defaultData = {}
+        } = config;
+        
+        // Registrar módulo
+        this.modules.set(name, {
+            instance,
+            hasForm,
+            hasPreview,
+            hasValidation,
+            isSimple,
+            fields
+        });
+        
+        // Inicializar dados se não existir
+        if (!this.appData[name]) {
+            this.appData[name] = { ...defaultData };
+        }
+        
+        // Registrar seção no estado
+        this.appState.registeredSections.set(name, {
+            hasForm,
+            hasPreview,
+            hasValidation,
+            isSimple,
+            fields
+        });
+        
+        console.log(`📦 Módulo registrado: ${name}`, config);
+        
+        // Notificar que módulo foi registrado
+        this.emit('moduleRegistered', { name, config });
+        
+        // Carregar dados se já existirem
+        setTimeout(() => {
+            if (instance && typeof instance.loadData === 'function') {
+                instance.loadData();
+            }
+        }, 100);
+    },
+    
+    /**
+     * Sistema de eventos
+     */
+    emit(eventName, data) {
+        const event = new CustomEvent(eventName, { detail: data });
+        this.events.dispatchEvent(event);
+    },
+    
+    on(eventName, callback) {
+        this.events.addEventListener(eventName, callback);
+    },
+    
+    off(eventName, callback) {
+        this.events.removeEventListener(eventName, callback);
+    },
+    
+    /**
+     * Coleta de dados - delega para módulos
+     */
+    collectAllData() {
+        this.modules.forEach((moduleInfo, name) => {
+            const { instance } = moduleInfo;
+            
+            if (instance && typeof instance.collectData === 'function') {
+                const moduleData = instance.collectData();
+                if (moduleData) {
+                    this.appData[name] = { ...this.appData[name], ...moduleData };
+                }
+            }
+        });
+        
+        return this.appData;
+    },
+    
+    /**
+     * Validação - delega para módulos
+     */
+    validateSection(sectionName) {
+        const moduleInfo = this.modules.get(sectionName);
+        
+        if (moduleInfo && moduleInfo.hasValidation && moduleInfo.instance) {
+            const { instance } = moduleInfo;
+            if (typeof instance.validateSection === 'function') {
+                return instance.validateSection();
+            }
+        }
+        
+        return true; // Sem validação = válido
+    },
+    
+    /**
+     * Preview - delega para módulos
+     */
+    generatePreview() {
+        let html = '<div class="preview-content">';
+        let hasAnyData = false;
+        
+        this.modules.forEach((moduleInfo, name) => {
+            const { instance, hasPreview } = moduleInfo;
+            
+            if (hasPreview && instance && typeof instance.generatePreview === 'function') {
+                const modulePreview = instance.generatePreview();
+                if (modulePreview) {
+                    hasAnyData = true;
+                    html += modulePreview;
+                }
+            }
+        });
+        
+        html += '</div>';
+        
+        return hasAnyData ? html : null;
+    },
+    
+    /**
+     * Progresso - calcula baseado em módulos registrados
+     */
+    calculateProgress() {
+        let totalSections = 0;
+        let completedSections = 0;
+        
+        this.modules.forEach((moduleInfo, name) => {
+            totalSections++;
+            
+            // Verificar se seção tem dados
+            const sectionData = this.appData[name];
+            if (this.hasSectionData(sectionData)) {
+                completedSections++;
+            }
+        });
+        
+        return totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
+    },
+    
+    /**
+     * Verificar se seção tem dados significativos
+     */
+    hasSectionData(sectionData) {
+        if (!sectionData || typeof sectionData !== 'object') return false;
+        
+        return Object.values(sectionData).some(value => {
+            if (typeof value === 'string') {
+                return value.trim().length > 0;
+            } else if (Array.isArray(value)) {
+                return value.length > 0;
+            } else if (typeof value === 'object' && value !== null) {
+                return Object.keys(value).length > 0;
+            }
+            return Boolean(value);
+        });
+    }
+};
 
 // ===========================
 // INICIALIZAÇÃO DA APLICAÇÃO
@@ -82,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
  * Inicialização principal da aplicação
  */
 function initializeApp() {
-    // 1. Verificar se elementos essenciais existem
+    // 1. Verificar elementos essenciais
     if (!validateRequiredElements()) {
         throw new Error('Elementos HTML essenciais não encontrados');
     }
@@ -90,17 +250,17 @@ function initializeApp() {
     // 2. Configurar navegação
     setupNavigation();
     
-    // 3. Configurar formulários
-    setupFormHandlers();
-    
-    // 4. Configurar botões de ação
+    // 3. Configurar botões de ação
     setupActionButtons();
     
-    // 5. Carregar dados salvos
+    // 4. Carregar dados salvos
     loadDataFromStorage();
     
-    // 6. Configurar auto-save
+    // 5. Configurar auto-save
     setupAutoSave();
+    
+    // 6. Configurar sistema de módulos
+    setupModuleSystem();
     
     // 7. Atualizar interface inicial
     updateUI();
@@ -113,13 +273,7 @@ function initializeApp() {
 // ===========================
 
 function validateRequiredElements() {
-    const requiredElements = [
-        'navTabs',
-        'saveStatus', 
-        'saveText',
-        'section-consultor',
-        'section-cliente'
-    ];
+    const requiredElements = ['navTabs', 'saveStatus', 'saveText'];
     
     for (const elementId of requiredElements) {
         if (!document.getElementById(elementId)) {
@@ -129,6 +283,169 @@ function validateRequiredElements() {
     }
     
     return true;
+}
+
+// ===========================
+// SISTEMA DE MÓDULOS
+// ===========================
+
+function setupModuleSystem() {
+    // Escutar quando módulos são registrados
+    window.FichaTecnica.on('moduleRegistered', (event) => {
+        const { name, config } = event.detail;
+        console.log(`🔌 Módulo conectado: ${name}`);
+    });
+    
+    // Escutar mudanças em seções
+    window.FichaTecnica.on('sectionChanged', (event) => {
+        const { section, data } = event.detail;
+        console.log(`📝 Seção ${section} modificada`);
+        
+        // Marcar como modificado
+        appState.hasUnsavedChanges = true;
+        updateSaveStatus('editing', 'Editando...');
+    });
+    
+    // Auto-registrar seções simples descobrindo do DOM
+    discoverSimpleSections();
+}
+
+/**
+ * Descobrir seções simples automaticamente do DOM
+ */
+function discoverSimpleSections() {
+    const simpleSectionSelectors = [
+        '#section-consultor',
+        '#section-cliente'
+        // Adicione aqui outras seções simples conforme necessário
+    ];
+    
+    simpleSectionSelectors.forEach(selector => {
+        const sectionElement = document.querySelector(selector);
+        if (sectionElement) {
+            const sectionName = sectionElement.id.replace('section-', '');
+            registerSimpleSection(sectionName, sectionElement);
+        }
+    });
+}
+
+/**
+ * Registrar seção simples automaticamente
+ */
+function registerSimpleSection(sectionName, sectionElement) {
+    // Descobrir campos da seção
+    const inputs = sectionElement.querySelectorAll('input, select, textarea');
+    const fields = Array.from(inputs).map(input => {
+        // Extrair nome do campo do ID (ex: consultorNome -> nome)
+        const fieldName = input.id.replace(sectionName, '').toLowerCase();
+        return fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
+    }).filter(field => field.length > 0);
+    
+    // Dados padrão baseados nos campos
+    const defaultData = {};
+    fields.forEach(field => {
+        defaultData[field] = '';
+    });
+    
+    // Criar instância simples
+    const simpleInstance = createSimpleModuleInstance(sectionName, fields);
+    
+    // Registrar módulo
+    window.FichaTecnica.registerModule({
+        name: sectionName,
+        instance: simpleInstance,
+        hasForm: true,
+        hasPreview: true,
+        hasValidation: true,
+        isSimple: true,
+        fields,
+        defaultData
+    });
+    
+    console.log(`🎯 Seção simples auto-registrada: ${sectionName}`, { fields });
+}
+
+/**
+ * Criar instância de módulo simples
+ */
+function createSimpleModuleInstance(sectionName, fields) {
+    return {
+        collectData() {
+            const data = {};
+            fields.forEach(field => {
+                const input = document.getElementById(`${sectionName}${capitalize(field)}`);
+                if (input) {
+                    data[field] = input.value.trim();
+                }
+            });
+            return data;
+        },
+        
+        loadData() {
+            const sectionData = window.FichaTecnica.appData[sectionName];
+            if (sectionData) {
+                fields.forEach(field => {
+                    const input = document.getElementById(`${sectionName}${capitalize(field)}`);
+                    if (input && sectionData[field]) {
+                        input.value = sectionData[field];
+                    }
+                });
+            }
+        },
+        
+        validateSection() {
+            const sectionElement = document.getElementById(`section-${sectionName}`);
+            if (!sectionElement) return true;
+            
+            const requiredFields = sectionElement.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!validateField(field)) {
+                    isValid = false;
+                }
+            });
+            
+            return isValid;
+        },
+        
+        generatePreview() {
+            const sectionData = window.FichaTecnica.appData[sectionName];
+            if (!sectionData || !window.FichaTecnica.hasSectionData(sectionData)) {
+                return null;
+            }
+            
+            const sectionTitles = {
+                consultor: '👤 Dados do Consultor',
+                cliente: '🏢 Dados do Cliente'
+            };
+            
+            const fieldLabels = {
+                consultor: { nome: 'Nome', telefone: 'Telefone', email: 'Email' },
+                cliente: { 
+                    nome: 'Empresa', cidade: 'Cidade', contato: 'Contato', 
+                    segmento: 'Segmento', telefone: 'Telefone', horario: 'Horário',
+                    email: 'Email', turnos: 'Turnos'
+                }
+            };
+            
+            let html = `
+                <div class="preview-section">
+                    <h3>${sectionTitles[sectionName] || capitalize(sectionName)}</h3>
+                    <div class="preview-grid">
+            `;
+            
+            Object.entries(sectionData).forEach(([field, value]) => {
+                if (value) {
+                    const label = fieldLabels[sectionName]?.[field] || capitalize(field);
+                    html += `<div><strong>${label}:</strong> ${value}</div>`;
+                }
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+    };
 }
 
 // ===========================
@@ -149,30 +466,8 @@ function setupNavigation() {
         });
     });
     
-    // Navegação com botões Próximo/Anterior
-    setupNavigationButtons();
-}
-
-function setupNavigationButtons() {
-    // Botões "Próximo"
-    document.querySelectorAll('.btn-next').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const nextSection = this.getAttribute('data-next');
-            if (nextSection && validateCurrentSection()) {
-                showSection(nextSection);
-            }
-        });
-    });
-    
-    // Botões "Anterior"
-    document.querySelectorAll('.btn-prev').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const prevSection = this.getAttribute('data-prev');
-            if (prevSection) {
-                showSection(prevSection);
-            }
-        });
-    });
+    // Configurar formulários simples
+    setupSimpleFormHandlers();
 }
 
 /**
@@ -181,10 +476,17 @@ function setupNavigationButtons() {
 function showSection(sectionName) {
     console.log(`📍 Navegando para seção: ${sectionName}`);
     
-    // Salvar dados da seção atual
-    collectFormData();
+    // Coletar dados de todas as seções
+    window.FichaTecnica.collectAllData();
     
-    // Atualizar estado
+    // Validar seção atual se necessário
+    if (!window.FichaTecnica.validateSection(appState.currentSection)) {
+        console.warn(`❌ Validação falhou para ${appState.currentSection}`);
+        return false;
+    }
+    
+    // Notificar mudança de seção
+    const previousSection = appState.currentSection;
     appState.currentSection = sectionName;
     
     // Atualizar interface
@@ -192,7 +494,13 @@ function showSection(sectionName) {
     updateSectionsUI(sectionName);
     updateMobileNav(sectionName);
     
-    // Ações específicas por seção
+    // Notificar módulos
+    window.FichaTecnica.emit('sectionChanged', {
+        from: previousSection,
+        to: sectionName
+    });
+    
+    // Ações específicas
     if (sectionName === 'preview') {
         updatePreview();
     }
@@ -225,20 +533,23 @@ function updateSectionsUI(activeSection) {
 function updateMobileNav(activeSection) {
     const currentSectionName = document.getElementById('currentSectionName');
     if (currentSectionName) {
-        const section = SECTIONS.find(s => s.key === activeSection);
-        currentSectionName.textContent = section ? section.label : activeSection;
+        // Buscar nas seções registradas
+        const sectionInfo = appState.registeredSections.get(activeSection);
+        currentSectionName.textContent = sectionInfo ? 
+            capitalize(activeSection) : 
+            activeSection;
     }
 }
 
 // ===========================
-// CONFIGURAÇÃO DOS FORMULÁRIOS
+// FORMULÁRIOS SIMPLES
 // ===========================
 
-function setupFormHandlers() {
-    const allInputs = document.querySelectorAll('input, select, textarea');
+function setupSimpleFormHandlers() {
+    // Auto-descobrir formulários simples
+    const simpleInputs = document.querySelectorAll('#section-consultor input, #section-consultor select, #section-cliente input, #section-cliente select');
     
-    allInputs.forEach(input => {
-        // Auto-save em mudanças
+    simpleInputs.forEach(input => {
         input.addEventListener('input', handleInputChange);
         input.addEventListener('change', handleInputChange);
         
@@ -257,98 +568,30 @@ function setupFormHandlers() {
 }
 
 function handleInputChange(event) {
-    // Marcar como alterado
     appState.hasUnsavedChanges = true;
-    
-    // Agendar auto-save
     scheduleAutoSave();
-    
-    // Atualizar status
     updateSaveStatus('editing', 'Editando...');
 }
 
 // ===========================
-// CONFIGURAÇÃO DOS BOTÕES DE AÇÃO
+// BOTÕES DE AÇÃO
 // ===========================
 
 function setupActionButtons() {
-    // Botão Exportar
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportData);
-    }
+    const actionButtons = {
+        exportBtn: exportData,
+        importBtn: importData,
+        clearBtn: clearAllData,
+        printBtn: () => window.print(),
+        generatePdfBtn: generatePDF
+    };
     
-    // Botão Importar
-    const importBtn = document.getElementById('importBtn');
-    if (importBtn) {
-        importBtn.addEventListener('click', importData);
-    }
-    
-    // Botão Limpar
-    const clearBtn = document.getElementById('clearBtn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearAllData);
-    }
-    
-    // Botão Imprimir
-    const printBtn = document.getElementById('printBtn');
-    if (printBtn) {
-        printBtn.addEventListener('click', function() {
-            window.print();
-        });
-    }
-    
-    // Botão Gerar PDF
-    const generatePdfBtn = document.getElementById('generatePdfBtn');
-    if (generatePdfBtn) {
-        generatePdfBtn.addEventListener('click', generatePDF);
-    }
-}
-
-// Centralized mapping for form fields
-const FORM_FIELD_MAP = {
-    consultor: ['nome', 'telefone', 'email'],
-    cliente: ['nome', 'cidade', 'contato', 'segmento', 'telefone', 'horario', 'email', 'turnos'],
-    // Add mappings for other sections as needed
-};
-
-// Abstracted function to collect form data
-function collectFormData() {
-    try {
-        Object.entries(FORM_FIELD_MAP).forEach(([section, fields]) => {
-            fields.forEach(field => {
-                const input = document.getElementById(`${section}${capitalize(field)}`);
-                if (input) {
-                    appData[section][field] = input.value.trim();
-                }
-            });
-        });
-        console.log('📊 Dados coletados:', appData);
-    } catch (error) {
-        console.error('❌ Erro ao coletar dados:', error);
-    }
-}
-
-// Abstracted function to populate form fields
-function populateForm() {
-    try {
-        Object.entries(FORM_FIELD_MAP).forEach(([section, fields]) => {
-            fields.forEach(field => {
-                const input = document.getElementById(`${section}${capitalize(field)}`);
-                if (input) {
-                    input.value = appData[section][field] || '';
-                }
-            });
-        });
-        console.log('📝 Formulário preenchido com dados salvos');
-    } catch (error) {
-        console.error('❌ Erro ao preencher formulário:', error);
-    }
-}
-
-// Utility function to capitalize the first letter
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    Object.entries(actionButtons).forEach(([id, handler]) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', handler);
+        }
+    });
 }
 
 // ===========================
@@ -360,8 +603,20 @@ function loadDataFromStorage() {
         const saved = localStorage.getItem('fichaTecnicaData');
         if (saved) {
             const savedData = JSON.parse(saved);
-            appData = { ...appData, ...savedData };
-            populateForm();
+            
+            // Mesclar dados salvos
+            Object.keys(savedData).forEach(sectionName => {
+                if (!appData[sectionName]) {
+                    appData[sectionName] = {};
+                }
+                appData[sectionName] = { ...appData[sectionName], ...savedData[sectionName] };
+            });
+            
+            // Notificar módulos para carregar
+            setTimeout(() => {
+                window.FichaTecnica.emit('loadData', {});
+            }, 200);
+            
             console.log('📥 Dados carregados do storage');
         }
     } catch (error) {
@@ -371,11 +626,14 @@ function loadDataFromStorage() {
 
 function saveData() {
     try {
-        collectFormData();
+        window.FichaTecnica.collectAllData();
         localStorage.setItem('fichaTecnicaData', JSON.stringify(appData));
         appState.hasUnsavedChanges = false;
         appState.lastSaveTime = new Date();
         updateSaveStatus('saved', 'Salvo automaticamente');
+        
+        window.FichaTecnica.emit('dataSaved', { timestamp: appState.lastSaveTime });
+        
         console.log('💾 Dados salvos com sucesso');
         return true;
     } catch (error) {
@@ -386,11 +644,10 @@ function saveData() {
 }
 
 // ===========================
-// SISTEMA DE AUTO-SAVE
+// AUTO-SAVE
 // ===========================
 
 function setupAutoSave() {
-    // Auto-save a cada 30 segundos
     setInterval(function() {
         if (appState.hasUnsavedChanges) {
             saveData();
@@ -402,81 +659,23 @@ function scheduleAutoSave() {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
         saveData();
-    }, 2000); // Save após 2 segundos de inatividade
+    }, 2000);
 }
 
 // ===========================
-// VALIDAÇÃO
-// ===========================
-
-function validateField(field) {
-    // Implementação básica de validação
-    const value = field.value.trim();
-    let isValid = true;
-    let errorMessage = '';
-    
-    // Resetar estado de erro
-    field.classList.remove('error', 'invalid');
-    
-    // Validações específicas
-    if (field.required && !value) {
-        isValid = false;
-        errorMessage = 'Campo obrigatório';
-    } else if (field.type === 'email' && value && !isValidEmail(value)) {
-        isValid = false;
-        errorMessage = 'Email inválido';
-    }
-    
-    // Mostrar erro se inválido
-    if (!isValid) {
-        field.classList.add('error', 'invalid');
-        const errorElement = document.getElementById(`${field.id}-error`);
-        if (errorElement) {
-            errorElement.textContent = errorMessage;
-            errorElement.style.display = 'block';
-        }
-    } else {
-        const errorElement = document.getElementById(`${field.id}-error`);
-        if (errorElement) {
-            errorElement.style.display = 'none';
-        }
-    }
-    
-    return isValid;
-}
-
-function validateCurrentSection() {
-    const currentSectionElement = document.getElementById(`section-${appState.currentSection}`);
-    if (!currentSectionElement) return true;
-    
-    const requiredFields = currentSectionElement.querySelectorAll('[required]');
-    let isValid = true;
-    
-    requiredFields.forEach(field => {
-        if (!validateField(field)) {
-            isValid = false;
-        }
-    });
-    
-    return isValid;
-}
-
-// ===========================
-// ATUALIZAÇÃO DA INTERFACE
+// INTERFACE
 // ===========================
 
 function updateUI() {
-    // Atualizar progresso
     updateProgress();
     
-    // Atualizar preview se necessário
     if (appState.currentSection === 'preview') {
         updatePreview();
     }
 }
 
 function updateProgress() {
-    const progress = calculateProgress();
+    const progress = window.FichaTecnica.calculateProgress();
     const progressFill = document.getElementById('progressFill');
     const progressPercent = document.getElementById('progressPercent');
     
@@ -487,25 +686,6 @@ function updateProgress() {
     if (progressPercent) {
         progressPercent.textContent = `${Math.round(progress)}%`;
     }
-}
-
-function calculateProgress() {
-    let totalFields = 0;
-    let filledFields = 0;
-    
-    // Calcular progresso baseado nos dados preenchidos
-    Object.values(appData).forEach(section => {
-        if (typeof section === 'object' && section !== null) {
-            Object.values(section).forEach(value => {
-                totalFields++;
-                if (value && value.toString().trim()) {
-                    filledFields++;
-                }
-            });
-        }
-    });
-    
-    return totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
 }
 
 function updateSaveStatus(status, message) {
@@ -526,59 +706,16 @@ function updateSaveStatus(status, message) {
     }
 }
 
-// ===========================
-// PREVIEW E PDF
-// ===========================
-
 function updatePreview() {
-    collectFormData();
+    window.FichaTecnica.collectAllData();
     
     const previewContainer = document.getElementById('previewDocument');
     if (!previewContainer) return;
     
-    let hasData = false;
-    let html = '<div class="preview-content">';
+    const previewHTML = window.FichaTecnica.generatePreview();
     
-    // Preview Consultor
-    if (appData.consultor.nome || appData.consultor.telefone || appData.consultor.email) {
-        hasData = true;
-        html += `
-            <div class="preview-section">
-                <h3>👤 Dados do Consultor</h3>
-                <div class="preview-grid">
-        `;
-        
-        if (appData.consultor.nome) html += `<div><strong>Nome:</strong> ${appData.consultor.nome}</div>`;
-        if (appData.consultor.telefone) html += `<div><strong>Telefone:</strong> ${appData.consultor.telefone}</div>`;
-        if (appData.consultor.email) html += `<div><strong>Email:</strong> ${appData.consultor.email}</div>`;
-        
-        html += '</div></div>';
-    }
-    
-    // Preview Cliente
-    if (Object.values(appData.cliente).some(v => v)) {
-        hasData = true;
-        html += `
-            <div class="preview-section">
-                <h3>🏢 Dados do Cliente</h3>
-                <div class="preview-grid">
-        `;
-        
-        if (appData.cliente.nome) html += `<div><strong>Empresa:</strong> ${appData.cliente.nome}</div>`;
-        if (appData.cliente.cidade) html += `<div><strong>Cidade:</strong> ${appData.cliente.cidade}</div>`;
-        if (appData.cliente.contato) html += `<div><strong>Contato:</strong> ${appData.cliente.contato}</div>`;
-        if (appData.cliente.segmento) html += `<div><strong>Segmento:</strong> ${appData.cliente.segmento}</div>`;
-        if (appData.cliente.telefone) html += `<div><strong>Telefone:</strong> ${appData.cliente.telefone}</div>`;
-        if (appData.cliente.email) html += `<div><strong>Email:</strong> ${appData.cliente.email}</div>`;
-        if (appData.cliente.turnos) html += `<div><strong>Turnos:</strong> ${appData.cliente.turnos}</div>`;
-        
-        html += '</div></div>';
-    }
-    
-    html += '</div>';
-    
-    if (hasData) {
-        previewContainer.innerHTML = html;
+    if (previewHTML) {
+        previewContainer.innerHTML = previewHTML;
     } else {
         previewContainer.innerHTML = `
             <div class="preview-placeholder">
@@ -591,12 +728,48 @@ function updatePreview() {
 }
 
 // ===========================
-// FUNÇÕES DE AÇÃO
+// VALIDAÇÃO
+// ===========================
+
+function validateField(field) {
+    const value = field.value.trim();
+    let isValid = true;
+    let errorMessage = '';
+    
+    field.classList.remove('error', 'invalid');
+    
+    if (field.required && !value) {
+        isValid = false;
+        errorMessage = 'Campo obrigatório';
+    } else if (field.type === 'email' && value && !isValidEmail(value)) {
+        isValid = false;
+        errorMessage = 'Email inválido';
+    }
+    
+    if (!isValid) {
+        field.classList.add('error', 'invalid');
+        const errorElement = document.getElementById(`${field.id}-error`);
+        if (errorElement) {
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+        }
+    } else {
+        const errorElement = document.getElementById(`${field.id}-error`);
+        if (errorElement) {
+            errorElement.style.display = 'none';
+        }
+    }
+    
+    return isValid;
+}
+
+// ===========================
+// AÇÕES
 // ===========================
 
 function exportData() {
     try {
-        collectFormData();
+        window.FichaTecnica.collectAllData();
         const dataStr = JSON.stringify(appData, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         
@@ -623,8 +796,9 @@ function importData() {
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    appData = { ...appData, ...importedData };
-                    populateForm();
+                    Object.assign(appData, importedData);
+                    
+                    window.FichaTecnica.emit('loadData', {});
                     saveData();
                     updateSaveStatus('imported', 'Dados importados');
                 } catch (error) {
@@ -640,41 +814,25 @@ function importData() {
 
 function clearAllData() {
     if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
-        // Reset dos dados
-        appData = {
-            consultor: { nome: '', telefone: '', email: '' },
-            cliente: { nome: '', cidade: '', contato: '', segmento: '', telefone: '', horario: '', email: '', turnos: '' },
-            maquina: { nome: '', tipoDispositivo: [], tensaoEntrada: '', fase: '', neutro: '', tensaoComando: '', tipoControle: '', tipoPainel: [], abordagem: [] },
-            acionamentos: { quantidade: 0, lista: [] },
-            seguranca: { botoes: {}, controladores: {} },
-            automacao: {},
-            infraestrutura: {},
-            observacoes: {}
-        };
-        
-        // Limpar formulários
-        document.querySelectorAll('input, select, textarea').forEach(field => {
-            if (field.type === 'checkbox' || field.type === 'radio') {
-                field.checked = false;
-            } else {
-                field.value = '';
-            }
+        // Reset completo
+        Object.keys(appData).forEach(key => {
+            appData[key] = {};
         });
+        
+        // Notificar módulos
+        window.FichaTecnica.emit('clearData', {});
         
         // Limpar storage
         localStorage.removeItem('fichaTecnicaData');
         
-        // Atualizar interface
         updateUI();
         updateSaveStatus('cleared', 'Dados limpos');
-        
-        // Ir para primeira seção
         showSection('consultor');
     }
 }
 
 function generatePDF() {
-    alert('Funcionalidade de PDF será implementada em breve!\n\nPor enquanto, use o botão "Imprimir" e salve como PDF.');
+    alert('Funcionalidade de PDF será implementada em breve!');
 }
 
 // ===========================
@@ -702,76 +860,42 @@ function isValidEmail(email) {
 
 function showError(message) {
     console.error('Error:', message);
-    alert('Erro: ' + message); // Substituir por modal mais elegante posteriormente
+    alert('Erro: ' + message);
+}
+
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // ===========================
-// EXPORTS GLOBAIS
+// NAVEGAÇÃO POR TECLADO
 // ===========================
 
-// Expor funções necessárias globalmente
-window.FichaTecnica = {
-    appData,
-    appState,
-    showSection,
-    collectFormData,
-    saveData,
-    loadDataFromStorage,
-    validateField,
-    validateCurrentSection,
-    updateUI,
-    updatePreview,
-    formatPhone,
-    isValidEmail,
-    showError
-};
-
-console.log('📦 app.js carregado e compatível com HTML');
-
-const SECTIONS = [
-    { key: 'consultor', label: 'Consultor' },
-    { key: 'cliente', label: 'Cliente' },
-    { key: 'maquina', label: 'Máquina' },
-    { key: 'acionamentos', label: 'Acionamentos' },
-    { key: 'seguranca', label: 'Segurança' },
-    { key: 'automacao', label: 'Automação' },
-    { key: 'infraestrutura', label: 'Infraestrutura' },
-    { key: 'observacoes', label: 'Observações' },
-    { key: 'preview', label: 'Visualizar' }
-];
-
-// Keyboard navigation for sections
 document.addEventListener('keydown', function (e) {
-    // Ctrl + ArrowRight: Próxima seção
     if (e.ctrlKey && e.key === 'ArrowRight') {
         e.preventDefault();
         goToNextSection();
     }
-    // Ctrl + ArrowLeft: Seção anterior
     if (e.ctrlKey && e.key === 'ArrowLeft') {
         e.preventDefault();
         goToPrevSection();
     }
-    // Alt + [1-9]: Ir para seção específica (até 9 seções)
-    if (e.altKey && /^[1-9]$/.test(e.key)) {
-        const idx = parseInt(e.key, 10) - 1;
-        if (SECTIONS[idx]) {
-            e.preventDefault();
-            showSection(SECTIONS[idx].key);
-        }
-    }
 });
 
 function goToNextSection() {
-    const idx = SECTIONS.findIndex(s => s.key === appState.currentSection);
-    if (idx !== -1 && idx < SECTIONS.length - 1) {
-        showSection(SECTIONS[idx + 1].key);
+    const sectionNames = Array.from(appState.registeredSections.keys());
+    const currentIndex = sectionNames.indexOf(appState.currentSection);
+    if (currentIndex !== -1 && currentIndex < sectionNames.length - 1) {
+        showSection(sectionNames[currentIndex + 1]);
     }
 }
 
 function goToPrevSection() {
-    const idx = SECTIONS.findIndex(s => s.key === appState.currentSection);
-    if (idx > 0) {
-        showSection(SECTIONS[idx - 1].key);
+    const sectionNames = Array.from(appState.registeredSections.keys());
+    const currentIndex = sectionNames.indexOf(appState.currentSection);
+    if (currentIndex > 0) {
+        showSection(sectionNames[currentIndex - 1]);
     }
 }
+
+console.log('📦 app.js carregado - Core modular puro');

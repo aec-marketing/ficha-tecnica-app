@@ -1,0 +1,316 @@
+/**
+ * ESTILOS ESPECÍFICOS - SEÇÃO MÁQUINA
+ * Componentes visuais para campos condicionais e checkboxes
+ */
+
+/* ===========================
+   CHECKBOX GROUPS
+   =========================== */
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border: 2px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--card-bg, #ffffff);
+    position: relative;
+    min-height: 60px;
+}
+
+.checkbox-item:hover {
+    border-color: var(--primary-color, #2563eb);
+    background: rgba(37, 99, 235, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.checkbox-item.selected {
+    border-color: var(--primary-color, #2563eb);
+    background: rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.checkbox-item.selected::before {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: var(--primary-color, #2563eb);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color, #e2e8f0);
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.checkbox-item input[type="checkbox"]:checked {
+    background: var(--primary-color, #2563eb);
+    border-color: var(--primary-color, #2563eb);
+}
+
+.checkbox-item input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.checkbox-item label {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.checkbox-item:hover label {
+    color: var(--primary-color, #2563eb);
+}
+
+/* ===========================
+   CAMPOS CONDICIONAIS
+   =========================== */
+
+.input-with-other {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.input-with-other .form-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-input-other {
+    flex: 1;
+    min-width: 0;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+        width: 0;
+        min-width: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+        width: auto;
+        min-width: 200px;
+    }
+}
+
+.conditional-field {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(37, 99, 235, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color, #2563eb);
+    animation: expandDown 0.3s ease;
+}
+
+@keyframes expandDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+}
+
+/* ===========================
+   FORM GROUPS ESPECÍFICOS
+   =========================== */
+
+.form-group-full {
+    grid-column: 1 / -1;
+}
+
+.form-grid .form-group-full .checkbox-group {
+    margin-top: 16px;
+}
+
+/* ===========================
+   INDICADORES VISUAIS
+   =========================== */
+
+.section[data-section="maquina"] .section-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--primary-color, #2563eb), transparent);
+    border-radius: 0 4px 4px 0;
+}
+
+/* ===========================
+   RESPONSIVIDADE
+   =========================== */
+
+@media (max-width: 768px) {
+    .checkbox-group {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .checkbox-item {
+        padding: 12px 16px;
+        min-height: 50px;
+    }
+    
+    .input-with-other {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .form-input-other {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .checkbox-item {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    
+    .checkbox-item label {
+        font-size: 14px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+
+/* ===========================
+   ANIMAÇÕES DE ENTRADA
+   =========================== */
+
+.section[data-section="maquina"].active .checkbox-item {
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+}
+
+.section[data-section="maquina"].active .checkbox-item:nth-child(1) { animation-delay: 0.1s; }
+.section[data-section="maquina"].active .checkbox-item:nth-child(2) { animation-delay: 0.2s; }
+.section[data-section="maquina"].active .checkbox-item:nth-child(3) { animation-delay: 0.3s; }
+.section[data-section="maquina"].active .checkbox-item:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===========================
+   ESTADOS DE VALIDAÇÃO
+   =========================== */
+
+.form-group.has-error .checkbox-group {
+    border: 2px solid var(--error-color, #ef4444);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.form-group.has-error .checkbox-item {
+    border-color: var(--error-color, #ef4444);
+}
+
+.validation-message {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-color, #ef4444);
+    border-radius: 6px;
+    color: var(--error-color, #ef4444);
+    font-size: 14px;
+    display: none;
+}
+
+.validation-message.show {
+    display: block;
+    animation: slideIn 0.3s ease;
+}
+
+/* ===========================
+   LOADING STATES
+   =========================== */
+
+.checkbox-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.checkbox-item.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--primary-color, #2563eb);
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
