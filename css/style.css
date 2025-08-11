@@ -1452,3 +1452,109 @@ body {
   background: var(--gray-800);
   border-color: var(--gray-700);
 }
+
+/* ======= VISUAL ATUALIZADO 2025 - VERSÃO MAIS MARCANTE ======= */
+
+/* Ajuste de fundo para destacar o efeito glassmorphism */
+body {
+  background: linear-gradient(180deg, var(--gray-50) 0%, #f0f4ff 100%);
+}
+
+/* Efeito Glassmorphism mais evidente */
+.app-header,
+.status-bar {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .app-header,
+[data-theme="dark"] .status-bar {
+  background: rgba(31, 41, 55, 0.75);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+/* Botões primários e secundários com visual mais moderno */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  border: none;
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, white, var(--gray-100));
+  border: 1px solid var(--gray-300);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.btn-secondary:hover {
+  .btn-secondary:hover {
+    background: linear-gradient(135deg, var(--gray-50), var(--gray-200));
+    transform: translateY(-2px);
+  }
+  transform: translateY(-2px);
+}
+
+/* Ajuste nos ícones para remover itálico e alinhar */
+[class^="icon-"], [class*=" icon-"] {
+  font-style: normal !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Destaque nas seções */
+.section {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-6);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  margin-bottom: var(--space-8);
+}
+[data-theme="dark"] .section {
+  background: var(--gray-800);
+}
+
+/* Títulos mais impactantes */
+.section-title {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--primary-600);
+}
+[data-theme="dark"] .section-title {
+  color: var(--primary-400);
+}
+
+/* Tabs de navegação mais modernas */
+.nav-tab {
+  font-weight: 600;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  margin-right: 4px;
+}
+.nav-tab.active {
+  background: linear-gradient(135deg, var(--primary-50), var(--primary-200));
+  border-bottom: 3px solid var(--primary-600);
+}
+[data-theme="dark"] .nav-tab.active {
+  background: var(--gray-700);
+}
+
+/* Campos de formulário com sombra leve */
+.form-input,
+.form-select,
+.form-textarea {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Correção: Remover itálico dos ícones do Font Awesome */
+.fa,
+.fas,
+.far,
+.fal,
+.fad,
+.fab {
+  font-style: normal !important;
+}

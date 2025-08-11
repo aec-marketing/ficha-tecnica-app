@@ -225,18 +225,8 @@ function updateSectionsUI(activeSection) {
 function updateMobileNav(activeSection) {
     const currentSectionName = document.getElementById('currentSectionName');
     if (currentSectionName) {
-        const sectionNames = {
-            'consultor': 'Consultor',
-            'cliente': 'Cliente',
-            'maquina': 'Máquina',
-            'acionamentos': 'Acionamentos',
-            'seguranca': 'Segurança',
-            'automacao': 'Automação',
-            'infraestrutura': 'Infraestrutura',
-            'observacoes': 'Observações',
-            'preview': 'Visualizar'
-        };
-        currentSectionName.textContent = sectionNames[activeSection] || activeSection;
+        const section = SECTIONS.find(s => s.key === activeSection);
+        currentSectionName.textContent = section ? section.label : activeSection;
     }
 }
 
@@ -315,45 +305,50 @@ function setupActionButtons() {
     }
 }
 
-// ===========================
-// COLETA DE DADOS DO FORMULÁRIO
-// ===========================
+// Centralized mapping for form fields
+const FORM_FIELD_MAP = {
+    consultor: ['nome', 'telefone', 'email'],
+    cliente: ['nome', 'cidade', 'contato', 'segmento', 'telefone', 'horario', 'email', 'turnos'],
+    // Add mappings for other sections as needed
+};
 
+// Abstracted function to collect form data
 function collectFormData() {
     try {
-        // Dados do consultor
-        const consultorNome = document.getElementById('consultorNome');
-        const consultorTelefone = document.getElementById('consultorTelefone');
-        const consultorEmail = document.getElementById('consultorEmail');
-        
-        if (consultorNome) appData.consultor.nome = consultorNome.value.trim();
-        if (consultorTelefone) appData.consultor.telefone = consultorTelefone.value.trim();
-        if (consultorEmail) appData.consultor.email = consultorEmail.value.trim();
-        
-        // Dados do cliente
-        const clienteNome = document.getElementById('clienteNome');
-        const clienteCidade = document.getElementById('clienteCidade');
-        const clienteContato = document.getElementById('clienteContato');
-        const clienteSegmento = document.getElementById('clienteSegmento');
-        const clienteTelefone = document.getElementById('clienteTelefone');
-        const clienteHorario = document.getElementById('clienteHorario');
-        const clienteEmail = document.getElementById('clienteEmail');
-        const clienteTurnos = document.getElementById('clienteTurnos');
-        
-        if (clienteNome) appData.cliente.nome = clienteNome.value.trim();
-        if (clienteCidade) appData.cliente.cidade = clienteCidade.value.trim();
-        if (clienteContato) appData.cliente.contato = clienteContato.value.trim();
-        if (clienteSegmento) appData.cliente.segmento = clienteSegmento.value.trim();
-        if (clienteTelefone) appData.cliente.telefone = clienteTelefone.value.trim();
-        if (clienteHorario) appData.cliente.horario = clienteHorario.value.trim();
-        if (clienteEmail) appData.cliente.email = clienteEmail.value.trim();
-        if (clienteTurnos) appData.cliente.turnos = clienteTurnos.value;
-        
+        Object.entries(FORM_FIELD_MAP).forEach(([section, fields]) => {
+            fields.forEach(field => {
+                const input = document.getElementById(`${section}${capitalize(field)}`);
+                if (input) {
+                    appData[section][field] = input.value.trim();
+                }
+            });
+        });
         console.log('📊 Dados coletados:', appData);
-        
     } catch (error) {
         console.error('❌ Erro ao coletar dados:', error);
     }
+}
+
+// Abstracted function to populate form fields
+function populateForm() {
+    try {
+        Object.entries(FORM_FIELD_MAP).forEach(([section, fields]) => {
+            fields.forEach(field => {
+                const input = document.getElementById(`${section}${capitalize(field)}`);
+                if (input) {
+                    input.value = appData[section][field] || '';
+                }
+            });
+        });
+        console.log('📝 Formulário preenchido com dados salvos');
+    } catch (error) {
+        console.error('❌ Erro ao preencher formulário:', error);
+    }
+}
+
+// Utility function to capitalize the first letter
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // ===========================
@@ -387,47 +382,6 @@ function saveData() {
         console.error('❌ Erro ao salvar dados:', error);
         updateSaveStatus('error', 'Erro ao salvar');
         return false;
-    }
-}
-
-function populateForm() {
-    try {
-        // Preencher dados do consultor
-        if (appData.consultor) {
-            const consultorNome = document.getElementById('consultorNome');
-            const consultorTelefone = document.getElementById('consultorTelefone');
-            const consultorEmail = document.getElementById('consultorEmail');
-            
-            if (consultorNome) consultorNome.value = appData.consultor.nome || '';
-            if (consultorTelefone) consultorTelefone.value = appData.consultor.telefone || '';
-            if (consultorEmail) consultorEmail.value = appData.consultor.email || '';
-        }
-        
-        // Preencher dados do cliente
-        if (appData.cliente) {
-            const clienteNome = document.getElementById('clienteNome');
-            const clienteCidade = document.getElementById('clienteCidade');
-            const clienteContato = document.getElementById('clienteContato');
-            const clienteSegmento = document.getElementById('clienteSegmento');
-            const clienteTelefone = document.getElementById('clienteTelefone');
-            const clienteHorario = document.getElementById('clienteHorario');
-            const clienteEmail = document.getElementById('clienteEmail');
-            const clienteTurnos = document.getElementById('clienteTurnos');
-            
-            if (clienteNome) clienteNome.value = appData.cliente.nome || '';
-            if (clienteCidade) clienteCidade.value = appData.cliente.cidade || '';
-            if (clienteContato) clienteContato.value = appData.cliente.contato || '';
-            if (clienteSegmento) clienteSegmento.value = appData.cliente.segmento || '';
-            if (clienteTelefone) clienteTelefone.value = appData.cliente.telefone || '';
-            if (clienteHorario) clienteHorario.value = appData.cliente.horario || '';
-            if (clienteEmail) clienteEmail.value = appData.cliente.email || '';
-            if (clienteTurnos) clienteTurnos.value = appData.cliente.turnos || '';
-        }
-        
-        console.log('📝 Formulário preenchido com dados salvos');
-        
-    } catch (error) {
-        console.error('❌ Erro ao preencher formulário:', error);
     }
 }
 
@@ -773,3 +727,51 @@ window.FichaTecnica = {
 };
 
 console.log('📦 app.js carregado e compatível com HTML');
+
+const SECTIONS = [
+    { key: 'consultor', label: 'Consultor' },
+    { key: 'cliente', label: 'Cliente' },
+    { key: 'maquina', label: 'Máquina' },
+    { key: 'acionamentos', label: 'Acionamentos' },
+    { key: 'seguranca', label: 'Segurança' },
+    { key: 'automacao', label: 'Automação' },
+    { key: 'infraestrutura', label: 'Infraestrutura' },
+    { key: 'observacoes', label: 'Observações' },
+    { key: 'preview', label: 'Visualizar' }
+];
+
+// Keyboard navigation for sections
+document.addEventListener('keydown', function (e) {
+    // Ctrl + ArrowRight: Próxima seção
+    if (e.ctrlKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToNextSection();
+    }
+    // Ctrl + ArrowLeft: Seção anterior
+    if (e.ctrlKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToPrevSection();
+    }
+    // Alt + [1-9]: Ir para seção específica (até 9 seções)
+    if (e.altKey && /^[1-9]$/.test(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        if (SECTIONS[idx]) {
+            e.preventDefault();
+            showSection(SECTIONS[idx].key);
+        }
+    }
+});
+
+function goToNextSection() {
+    const idx = SECTIONS.findIndex(s => s.key === appState.currentSection);
+    if (idx !== -1 && idx < SECTIONS.length - 1) {
+        showSection(SECTIONS[idx + 1].key);
+    }
+}
+
+function goToPrevSection() {
+    const idx = SECTIONS.findIndex(s => s.key === appState.currentSection);
+    if (idx > 0) {
+        showSection(SECTIONS[idx - 1].key);
+    }
+}
