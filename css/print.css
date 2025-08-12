@@ -1,0 +1,552 @@
+/**
+ * FICHA TÉCNICA DIGITAL - CSS PARA IMPRESSÃO E PDF
+ * Estilos otimizados para geração de documentos profissionais
+ */
+
+/* ===========================
+   RESET PARA IMPRESSÃO
+   =========================== */
+
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+    
+    body {
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        font-size: 11pt;
+        line-height: 1.4;
+        color: #1e293b;
+        background: white;
+    }
+    
+    /* Ocultar elementos de interface */
+    .app-header,
+    .app-footer,
+    .navigation,
+    .section-nav,
+    .btn,
+    .loading-overlay,
+    .modal-overlay,
+    .status-bar {
+        display: none !important;
+    }
+    
+    /* Mostrar apenas o preview para impressão */
+    .section:not(#section-preview) {
+        display: none !important;
+    }
+    
+    #section-preview {
+        display: block !important;
+        background: white;
+        box-shadow: none;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* ===========================
+   CONTAINER DO PREVIEW
+   =========================== */
+
+.preview-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.preview-document {
+    padding: 20px;
+    background: white;
+    min-height: 297mm; /* A4 height */
+    max-width: 210mm;  /* A4 width */
+    margin: 0 auto;
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #1e293b;
+}
+
+/* ===========================
+   CABEÇALHO DO DOCUMENTO
+   =========================== */
+
+.doc-header {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 15px 20px;
+    margin: -20px -20px 20px -20px;
+    text-align: center;
+    position: relative;
+}
+
+.doc-header::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #2563eb, #64748b, #2563eb);
+}
+
+.doc-title {
+    font-size: 18pt;
+    font-weight: bold;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.doc-subtitle {
+    font-size: 10pt;
+    margin: 5px 0 0 0;
+    opacity: 0.9;
+}
+
+/* ===========================
+   INFORMAÇÕES PRINCIPAIS
+   =========================== */
+
+.main-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.main-info-item {
+    display: flex;
+    align-items: center;
+}
+
+.main-info-label {
+    font-weight: bold;
+    color: #475569;
+    min-width: 80px;
+    margin-right: 10px;
+}
+
+.main-info-value {
+    color: #1e293b;
+    flex: 1;
+}
+
+/* ===========================
+   SEÇÕES DO DOCUMENTO
+   =========================== */
+
+.doc-section {
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+}
+
+.doc-section-header {
+    background: #f8fafc;
+    border-left: 4px solid #2563eb;
+    padding: 8px 15px;
+    margin-bottom: 15px;
+}
+
+.doc-section-title {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #2563eb;
+    margin: 0;
+}
+
+.doc-section-content {
+    padding-left: 10px;
+}
+
+/* ===========================
+   CAMPOS DE DADOS
+   =========================== */
+
+.field-group {
+    margin-bottom: 15px;
+}
+
+.field-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 6px;
+    page-break-inside: avoid;
+}
+
+.field-label {
+    font-weight: bold;
+    color: #64748b;
+    min-width: 120px;
+    margin-right: 15px;
+    font-size: 10pt;
+}
+
+.field-value {
+    color: #1e293b;
+    flex: 1;
+    font-size: 10pt;
+}
+
+.field-list {
+    color: #1e293b;
+    font-style: italic;
+}
+
+/* ===========================
+   TEXTO LONGO
+   =========================== */
+
+.text-field {
+    margin-bottom: 15px;
+    page-break-inside: avoid;
+}
+
+.text-field-label {
+    font-weight: bold;
+    color: #475569;
+    margin-bottom: 5px;
+    font-size: 11pt;
+}
+
+.text-field-content {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px;
+    color: #1e293b;
+    font-size: 10pt;
+    line-height: 1.5;
+}
+
+/* ===========================
+   ACIONAMENTOS
+   =========================== */
+
+.acionamento-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    page-break-inside: avoid;
+}
+
+.acionamento-title {
+    font-weight: bold;
+    color: #2563eb;
+    margin-bottom: 8px;
+    font-size: 11pt;
+}
+
+.acionamento-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.acionamento-field {
+    display: flex;
+    align-items: center;
+}
+
+.acionamento-field .field-label {
+    min-width: 80px;
+}
+
+/* ===========================
+   IMAGENS
+   =========================== */
+
+.images-section {
+    margin-top: 20px;
+    page-break-before: auto;
+}
+
+.images-title {
+    font-weight: bold;
+    color: #475569;
+    margin-bottom: 15px;
+    font-size: 12pt;
+}
+
+.image-item {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+    text-align: center;
+}
+
+.image-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px;
+    background: #f8fafc;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.document-image {
+    max-width: 100%;
+    max-height: 200px;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.image-caption {
+    margin-top: 5px;
+    font-size: 9pt;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* ===========================
+   TABELAS
+   =========================== */
+
+.doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 10pt;
+}
+
+.doc-table th {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    text-align: left;
+    font-weight: bold;
+    color: #475569;
+}
+
+.doc-table td {
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
+    color: #1e293b;
+}
+
+.doc-table tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+/* ===========================
+   RODAPÉ DO DOCUMENTO
+   =========================== */
+
+.doc-footer {
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 2px solid #e2e8f0;
+    text-align: center;
+    color: #64748b;
+    font-size: 9pt;
+}
+
+.footer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.footer-date {
+    font-style: italic;
+}
+
+.footer-page {
+    font-weight: bold;
+}
+
+.footer-system {
+    color: #94a3b8;
+}
+
+/* ===========================
+   QUEBRAS DE PÁGINA
+   =========================== */
+
+.page-break {
+    page-break-before: always;
+}
+
+.no-break {
+    page-break-inside: avoid;
+}
+
+.break-after {
+    page-break-after: always;
+}
+
+/* ===========================
+   PLACEHOLDER PARA PREVIEW
+   =========================== */
+
+.preview-placeholder {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+}
+
+.placeholder-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.preview-placeholder h3 {
+    font-size: 18pt;
+    margin-bottom: 10px;
+    color: #64748b;
+}
+
+.preview-placeholder p {
+    font-size: 12pt;
+    line-height: 1.6;
+}
+
+/* ===========================
+   RESPONSIVIDADE
+   =========================== */
+
+@media screen and (max-width: 768px) {
+    .preview-document {
+        max-width: 100%;
+        padding: 15px;
+        font-size: 10pt;
+    }
+    
+    .main-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .acionamento-fields {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-info {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* ===========================
+   UTILITÁRIOS
+   =========================== */
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.font-bold { font-weight: bold; }
+.font-normal { font-weight: normal; }
+.font-italic { font-style: italic; }
+
+.text-primary { color: #2563eb; }
+.text-secondary { color: #64748b; }
+.text-muted { color: #94a3b8; }
+
+.mb-small { margin-bottom: 5px; }
+.mb-medium { margin-bottom: 10px; }
+.mb-large { margin-bottom: 20px; }
+
+.p-small { padding: 5px; }
+.p-medium { padding: 10px; }
+.p-large { padding: 20px; }
+
+/* ===========================
+   ESTADOS DE LOADING
+   =========================== */
+
+.generating-pdf {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.generating-pdf::after {
+    content: 'Gerando PDF...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(37, 99, 235, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+/* ===========================
+   ANIMAÇÕES SUTIS
+   =========================== */
+
+.preview-document {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.doc-section {
+    animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===========================
+   CORES ESPECÍFICAS PARA IMPRESSÃO
+   =========================== */
+
+@media print {
+    .doc-header {
+        background: #2563eb !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .doc-section-header {
+        background: #f8fafc !important;
+        border-left-color: #2563eb !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .main-info,
+    .text-field-content,
+    .acionamento-item,
+    .image-container {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
