@@ -11,6 +11,10 @@ const AUTO_SAVE_INTERVAL = 30000;
 const FIELD_RESTORE_DELAY = 300;
 const MODULE_LOAD_DELAY = 100;
 
+const STORAGE_VERSION = '1.0'; // Versão do formato de dados
+const MAX_STORAGE_AGE_DAYS = 30; // Máximo 30 dias no localStorage
+const CLEANUP_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 horas
+
 // ===========================================
 // ESTADO GLOBAL DA APLICAÇÃO
 // ===========================================
@@ -167,14 +171,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeApp() {
-    if (!validateRequiredElements()) {
+     if (!validateRequiredElements()) {
         throw new Error('Elementos HTML essenciais não encontrados');
     }
 
     setupNavigation();
-    setupActionButtons();
+    setupActionButtonsWithCleanup(); // Versão com cleanup
     setupAutoSave();
     setupModuleSystem();
+    
+    // NOVO: Configurar limpeza automática
+    scheduleAutomaticCleanup();
     
     FichaTecnica.loadDataFromStorage();
     FichaTecnica.updateUI();
@@ -430,43 +437,227 @@ function validateField(field) {
 }
 
 // ===========================================
-// PERSISTÊNCIA DE DADOS
+// MELHORIAS NA FUNÇÃO loadDataFromStorage()
 // ===========================================
+
 function loadDataFromStorage() {
     try {
         const saved = localStorage.getItem('fichaTecnicaData');
+        const metadata = localStorage.getItem('fichaTecnicaMetadata');
+        
         if (!saved) return;
         
+        // Verificar metadados e idade dos dados
+        const isDataValid = validateStorageData(metadata);
+        if (!isDataValid) {
+            console.log('🧹 Dados antigos detectados - limpando localStorage');
+            cleanupStorage();
+            return;
+        }
+        
         const savedData = JSON.parse(saved);
-        Object.keys(savedData).forEach(section => {
+        
+        // Validar integridade dos dados antes de carregar
+        const cleanedData = sanitizeLoadedData(savedData);
+        
+        Object.keys(cleanedData).forEach(section => {
             if (!appState.data[section]) appState.data[section] = {};
-            appState.data[section] = { ...appState.data[section], ...savedData[section] };
+            appState.data[section] = { ...appState.data[section], ...cleanedData[section] };
         });
         
         setTimeout(() => FichaTecnica.emit('loadData', {}), 200);
-        console.log('📥 Dados carregados do storage');
+        console.log('📥 Dados válidos carregados do storage');
+        
     } catch (error) {
-        console.error('❌ Erro ao carregar dados:', error);
+        console.error('❌ Erro ao carregar dados - limpando localStorage:', error);
+        cleanupStorage();
     }
 }
+
+// ===========================================
+// MELHORIAS NA FUNÇÃO saveData()
+// ===========================================
 
 function saveData() {
     try {
         FichaTecnica.collectAllData();
-        localStorage.setItem('fichaTecnicaData', JSON.stringify(appState.data));
+        
+        // Limpar dados vazios antes de salvar
+        const cleanedData = sanitizeDataForSave(appState.data);
+        
+        // Salvar dados
+        localStorage.setItem('fichaTecnicaData', JSON.stringify(cleanedData));
+        
+        // Salvar metadados
+        const metadata = {
+            version: STORAGE_VERSION,
+            timestamp: new Date().toISOString(),
+            lastCleanup: new Date().toISOString()
+        };
+        localStorage.setItem('fichaTecnicaMetadata', JSON.stringify(metadata));
         
         appState.hasUnsavedChanges = false;
         appState.lastSaveTime = new Date();
         updateSaveStatus('saved', 'Salvo automaticamente');
         
         FichaTecnica.emit('dataSaved', { timestamp: appState.lastSaveTime });
-        console.log('💾 Dados salvos com sucesso');
+        console.log('💾 Dados limpos salvos com sucesso');
         return true;
+        
     } catch (error) {
         console.error('❌ Erro ao salvar dados:', error);
         updateSaveStatus('error', 'Erro ao salvar');
         return false;
     }
+}
+
+// ===========================================
+// FUNÇÕES DE VALIDAÇÃO E SANITIZAÇÃO
+// ===========================================
+
+/**
+ * Validar se os dados no localStorage são válidos e não muito antigos
+ */
+function validateStorageData(metadataStr) {
+    if (!metadataStr) return false;
+    
+    try {
+        const metadata = JSON.parse(metadataStr);
+        
+        // Verificar versão
+        if (metadata.version !== STORAGE_VERSION) {
+            console.log('🔄 Versão do storage desatualizada');
+            return false;
+        }
+        
+        // Verificar idade dos dados
+        const dataAge = new Date() - new Date(metadata.timestamp);
+        const maxAge = MAX_STORAGE_AGE_DAYS * 24 * 60 * 60 * 1000;
+        
+        if (dataAge > maxAge) {
+            console.log('⏰ Dados muito antigos no localStorage');
+            return false;
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Metadados corrompidos:', error);
+        return false;
+    }
+}
+
+/**
+ * Limpar dados carregados de inconsistências
+ */
+function sanitizeLoadedData(data) {
+    const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
+    
+    // Limpar seção de segurança
+    if (cleaned.seguranca) {
+        cleaned.seguranca = sanitizeSecuritySection(cleaned.seguranca);
+    }
+    
+    // Limpar seção de automação
+    if (cleaned.automacao) {
+        cleaned.automacao = sanitizeAutomationSection(cleaned.automacao);
+    }
+    
+    // Limpar outras seções vazias
+    Object.keys(cleaned).forEach(sectionName => {
+        if (isEmptySection(cleaned[sectionName])) {
+            cleaned[sectionName] = {};
+        }
+    });
+    
+    return cleaned;
+}
+
+/**
+ * Limpar dados de segurança de inconsistências
+ */
+function sanitizeSecuritySection(segurancaData) {
+    const cleaned = { botoes: {}, controladores: {} };
+    
+    // Limpar botões
+    if (segurancaData.botoes) {
+        Object.entries(segurancaData.botoes).forEach(([key, device]) => {
+            if (isValidDevice(device)) {
+                cleaned.botoes[key] = device;
+            }
+        });
+    }
+    
+    // Limpar controladores
+    if (segurancaData.controladores) {
+        Object.entries(segurancaData.controladores).forEach(([key, device]) => {
+            if (isValidDevice(device)) {
+                cleaned.controladores[key] = device;
+            }
+        });
+    }
+    
+    return cleaned;
+}
+
+/**
+ * Limpar dados de automação de inconsistências
+ */
+function sanitizeAutomationSection(automacaoData) {
+    const cleaned = {};
+    
+    Object.entries(automacaoData).forEach(([key, device]) => {
+        if (isValidDevice(device)) {
+            cleaned[key] = device;
+        }
+    });
+    
+    return cleaned;
+}
+
+/**
+ * Verificar se um dispositivo tem dados válidos
+ */
+function isValidDevice(device) {
+    if (!device || typeof device !== 'object') return false;
+    
+    // Deve ter quantidade válida
+    const quantity = parseInt(device.quantity) || 0;
+    if (quantity <= 0) return false;
+    
+    // Se quantidade é 1 sem observação, pode ser hardcode
+    if (quantity === 1 && (!device.observation || device.observation.trim() === '')) {
+        return false;
+    }
+    
+    // Se tem observação ou quantidade > 1, é válido
+    return true;
+}
+
+/**
+ * Verificar se uma seção está vazia
+ */
+function isEmptySection(section) {
+    if (!section || typeof section !== 'object') return true;
+    
+    return Object.values(section).every(value => {
+        if (typeof value === 'string') return value.trim() === '';
+        if (Array.isArray(value)) return value.length === 0;
+        if (typeof value === 'object' && value !== null) {
+            return Object.keys(value).length === 0;
+        }
+        return !value;
+    });
+}
+
+/**
+ * Limpar dados antes de salvar
+ */
+function sanitizeDataForSave(data) {
+    const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
+    
+    // Aplicar mesmas limpezas da carga
+    return sanitizeLoadedData(cleaned);
 }
 
 // ===========================================
@@ -599,7 +790,6 @@ function startImportCorrection(importedData) {
     setTimeout(() => {
         forceRegisterActiveDevices();
         setTimeout(() => {
-            forcePopulateDeviceFields();
             setTimeout(verifyFieldPopulation, 500);
             setTimeout(forceFixAcionamentos, 1200);
             setTimeout(finalValidationCheck, 2000);
@@ -737,12 +927,19 @@ function restoreDevicesSafe(data) {
                 if (!devices) return;
                 
                 Object.entries(devices).forEach(([key, device]) => {
-                    restoreDevice(key, device);
+                    // ✅ APENAS restaurar se realmente tem dados válidos
+                    if (device?.quantity && device.quantity !== '0' && device.quantity !== '') {
+                        restoreDevice(key, device);
+                    }
                 });
             });
         } else {
             Object.entries(sectionData).forEach(([key, device]) => {
-                if (device?.quantity) restoreDevice(key, device);
+                // ✅ APENAS restaurar se tem dados válidos E não é campo vazio/padrão
+                if (device?.quantity && device.quantity !== '0' && device.quantity !== '' && 
+                    (device.observation || device.quantity !== '1')) { // Se tem observação OU quantidade diferente de 1
+                    restoreDevice(key, device);
+                }
             });
         }
     });
@@ -901,23 +1098,7 @@ function forceFixAcionamentos() {
     }
 }
 
-function forcePopulateDeviceFields() {
-    const devices = [
-        'emergencia', 'rearme', 'sc26', 'botaoPulso', 
-        'pedaleiraOperacao', 'sensorCapacitivo'
-    ];
-    
-    devices.forEach(device => {
-        const deviceData = FichaTecnica.state.data.seguranca?.botoes?.[device] || 
-                          FichaTecnica.state.data.seguranca?.controladores?.[device] ||
-                          FichaTecnica.state.data.automacao?.[device];
-        
-        if (!deviceData) return;
-        
-        setFieldValue(`qty-${device}`, deviceData.quantity);
-        setFieldValue(`obs-${device}`, deviceData.observation || '');
-    });
-}
+
 
 // ===========================================
 // FUNÇÕES UTILITÁRIAS
@@ -981,19 +1162,22 @@ function testAllValidations() {
 }
 
 function verifyFieldPopulation() {
-    const devices = [
-        'emergencia', 'rearme', 'sc26', 'botaoPulso', 
-        'pedaleiraOperacao', 'sensorCapacitivo'
-    ];
+    // Em vez de lista hardcoded, buscar apenas checkboxes marcados
+    const checkedDevices = document.querySelectorAll('input[type="checkbox"][id^="device-"]:checked');
     
-    const result = devices.reduce((acc, device) => {
-        const field = document.getElementById(`qty-${device}`);
-        if (!field) return acc;
+    const result = { success: 0, total: 0 };
+    
+    checkedDevices.forEach(checkbox => {
+        const deviceKey = checkbox.id.replace('device-', '');
+        const field = document.getElementById(`qty-${deviceKey}`);
         
-        acc.total++;
-        if (field.value && field.value !== '0') acc.success++;
-        return acc;
-    }, { success: 0, total: 0 });
+        if (field) {
+            result.total++;
+            if (field.value && field.value !== '0') {
+                result.success++;
+            }
+        }
+    });
     
     console.log(`📊 Campos preenchidos: ${result.success}/${result.total}`);
     return result;
@@ -1047,4 +1231,169 @@ function navigateSections(direction) {
     }
 }
 
+// ===========================================
+// LIMPEZA AUTOMÁTICA E MANUTENÇÃO
+// ===========================================
+
+/**
+ * Limpar localStorage completamente
+ */
+function cleanupStorage() {
+    try {
+        localStorage.removeItem('fichaTecnicaData');
+        localStorage.removeItem('fichaTecnicaMetadata');
+        console.log('🧹 LocalStorage limpo');
+        
+        // Resetar dados do app
+        Object.keys(appState.data).forEach(key => {
+            appState.data[key] = {};
+        });
+        
+        // Notificar módulos
+        FichaTecnica.emit('clearData', {});
+        
+    } catch (error) {
+        console.error('❌ Erro ao limpar storage:', error);
+    }
+}
+
+/**
+ * Verificação automática de limpeza (executar na inicialização)
+ */
+function scheduleAutomaticCleanup() {
+    // Verificar imediatamente
+    checkStorageHealth();
+    
+    // Verificar periodicamente
+    setInterval(checkStorageHealth, CLEANUP_CHECK_INTERVAL);
+}
+
+/**
+ * Verificar saúde do localStorage
+ */
+function checkStorageHealth() {
+    try {
+        const metadata = localStorage.getItem('fichaTecnicaMetadata');
+        
+        if (!metadata) return;
+        
+        const meta = JSON.parse(metadata);
+        const lastCleanup = new Date(meta.lastCleanup || meta.timestamp);
+        const timeSinceCleanup = new Date() - lastCleanup;
+        
+        // Limpeza automática a cada 7 dias
+        if (timeSinceCleanup > 7 * 24 * 60 * 60 * 1000) {
+            console.log('🧹 Executando limpeza automática programada');
+            performAutomaticCleanup();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na verificação de saúde:', error);
+        cleanupStorage();
+    }
+}
+
+/**
+ * Executar limpeza automática sem remover dados válidos
+ */
+function performAutomaticCleanup() {
+    try {
+        const saved = localStorage.getItem('fichaTecnicaData');
+        if (!saved) return;
+        
+        const data = JSON.parse(saved);
+        const cleanedData = sanitizeLoadedData(data);
+        
+        // Re-salvar dados limpos
+        localStorage.setItem('fichaTecnicaData', JSON.stringify(cleanedData));
+        
+        // Atualizar metadados
+        const metadata = {
+            version: STORAGE_VERSION,
+            timestamp: new Date().toISOString(),
+            lastCleanup: new Date().toISOString()
+        };
+        localStorage.setItem('fichaTecnicaMetadata', JSON.stringify(metadata));
+        
+        console.log('✅ Limpeza automática concluída');
+        
+    } catch (error) {
+        console.error('❌ Erro na limpeza automática:', error);
+        cleanupStorage();
+    }
+}
+
+// ===========================================
+// MELHORIAS NA FUNÇÃO clearAllData()
+// ===========================================
+
+function clearAllData() {
+    if (!confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) return;
+    
+    // Limpeza completa
+    cleanupStorage();
+    
+    // Atualizar interface
+    updateUI();
+    updateSaveStatus('cleared', 'Dados limpos');
+    FichaTecnica.showSection('consultor');
+    
+    console.log('🗑️ Todos os dados foram limpos');
+}
+
+// ===========================================
+// BOTÃO DE LIMPEZA MANUAL PARA O USUÁRIO
+// ===========================================
+
+/**
+ * Adicionar à função setupActionButtons() no objeto actions:
+ */
+function setupActionButtonsWithCleanup() {
+    const actions = {
+        exportBtn: exportData,
+        importBtn: importData,
+        clearBtn: clearAllData,
+        cleanCacheBtn: cleanCache, // NOVO BOTÃO
+        printBtn: () => window.print(),
+        generatePdfBtn: generatePDF
+    };
+    
+    Object.entries(actions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) button.addEventListener('click', handler);
+    });
+}
+
+/**
+ * Nova função para limpeza manual de cache
+ */
+function cleanCache() {
+    if (!confirm('Limpar cache de dados antigos? Isso não afetará a ficha atual.')) return;
+    
+    try {
+        performAutomaticCleanup();
+        updateSaveStatus('cleaned', 'Cache limpo');
+        console.log('🧹 Cache limpo manualmente');
+        
+        // Feedback visual
+        const btn = document.getElementById('cleanCacheBtn');
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Limpo!';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na limpeza de cache:', error);
+        updateSaveStatus('error', 'Erro na limpeza');
+    }
+}
+
+
 console.log('📦 app.js carregado - Versão refatorada');
+
