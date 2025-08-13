@@ -829,3 +829,13 @@ body {
 .shadow-md { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
 
+/* Adicione ao seu arquivo CSS principal */
+.section-error {
+    animation: pulseError 0.5s ease-in-out;
+}
+
+@keyframes pulseError {
+    0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+}

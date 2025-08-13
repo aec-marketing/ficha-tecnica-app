@@ -1,20 +1,21 @@
 /**
- * FICHA TÉCNICA DIGITAL - APP.JS
- * Core verdadeiramente modular - ZERO dependências de seções específicas
- * 
- * Princípios:
- * - Core nunca conhece seções específicas
- * - Módulos se auto-registram com suas capacidades
- * - Comunicação 100% por eventos
- * - Extensível sem modificar core
+ * FICHA TÉCNICA DIGITAL - APP.JS (Refatorado)
+ * Core modular com organização melhorada e menos redundâncias
  */
 
-// ===========================
-// ESTADO GLOBAL DA APLICAÇÃO
-// ===========================
+// ===========================================
+// CONSTANTES E CONFIGURAÇÕES
+// ===========================================
+const AUTO_SAVE_DELAY = 2000;
+const AUTO_SAVE_INTERVAL = 30000;
+const FIELD_RESTORE_DELAY = 300;
+const MODULE_LOAD_DELAY = 100;
 
-let appData = {};
-let appState = {
+// ===========================================
+// ESTADO GLOBAL DA APLICAÇÃO
+// ===========================================
+const appState = {
+    data: {},
     currentSection: 'consultor',
     isLoading: false,
     hasUnsavedChanges: false,
@@ -23,28 +24,23 @@ let appState = {
     registeredSections: new Map()
 };
 
-// Timeouts para auto-save
-let saveTimeout;
-let uiUpdateTimeout;
+const appTimers = {
+    save: null,
+    uiUpdate: null
+};
 
-// ===========================
-// SISTEMA MODULAR PURO
-// ===========================
-
+// ===========================================
+// SISTEMA MODULAR
+// ===========================================
 const moduleEvents = new EventTarget();
 const loadedModules = new Map();
 
-// API Global - Núcleo sem conhecimento de seções específicas
-window.FichaTecnica = {
-    // Estado da aplicação
-    appData,
-    appState,
-    
-    // Sistema de eventos
+const FichaTecnica = {
+    state: appState,
     events: moduleEvents,
     modules: loadedModules,
-    
-    // Core functions
+
+    // Funções principais
     showSection,
     saveData,
     loadDataFromStorage,
@@ -52,308 +48,177 @@ window.FichaTecnica = {
     formatPhone,
     isValidEmail,
     showError,
-    
-    // ===========================
-    // API PARA MÓDULOS
-    // ===========================
-    
-    /**
-     * Registro completo de módulo com todas suas capacidades
-     */
+
+    // API para módulos
     registerModule(config) {
-        const {
-            name,
-            instance,
-            hasForm = false,
-            hasPreview = false,
-            hasValidation = false,
-            isSimple = false,
-            fields = [],
-            defaultData = {}
-        } = config;
-        
+        const { name, instance, hasForm = false, hasPreview = false, 
+                hasValidation = false, isSimple = false, fields = [], 
+                defaultData = {} } = config;
+
         // Registrar módulo
-        this.modules.set(name, {
-            instance,
-            hasForm,
-            hasPreview,
-            hasValidation,
-            isSimple,
-            fields
-        });
-        
+        this.modules.set(name, { instance, hasForm, hasPreview, hasValidation, isSimple, fields });
+
         // Inicializar dados se não existir
-        if (!this.appData[name]) {
-            this.appData[name] = { ...defaultData };
+        if (!this.state.data[name]) {
+            this.state.data[name] = { ...defaultData };
         }
-        
+
         // Registrar seção no estado
-        this.appState.registeredSections.set(name, {
-            hasForm,
-            hasPreview,
-            hasValidation,
-            isSimple,
-            fields
+        this.state.registeredSections.set(name, { 
+            hasForm, hasPreview, hasValidation, isSimple, fields 
         });
-        
-        console.log(`📦 Módulo registrado: ${name}`, config);
-        
-        // Notificar que módulo foi registrado
+
+        console.log(`📦 Módulo registrado: ${name}`);
+
+        // Notificar registro e carregar dados
         this.emit('moduleRegistered', { name, config });
-        
-        // Carregar dados se já existirem
-        setTimeout(() => {
-            if (instance && typeof instance.loadData === 'function') {
-                instance.loadData();
-            }
-        }, 100);
+        setTimeout(() => instance.loadData?.(), MODULE_LOAD_DELAY);
     },
-    
-    /**
-     * Sistema de eventos
-     */
+
+    // Sistema de eventos
     emit(eventName, data) {
-        const event = new CustomEvent(eventName, { detail: data });
-        this.events.dispatchEvent(event);
+        this.events.dispatchEvent(new CustomEvent(eventName, { detail: data }));
     },
-    
+
     on(eventName, callback) {
         this.events.addEventListener(eventName, callback);
     },
-    
+
     off(eventName, callback) {
         this.events.removeEventListener(eventName, callback);
     },
-    
-    /**
-     * Coleta de dados - delega para módulos
-     */
+
+    // Coletar dados de todos os módulos
     collectAllData() {
-        this.modules.forEach((moduleInfo, name) => {
-            const { instance } = moduleInfo;
-            
-            if (instance && typeof instance.collectData === 'function') {
-                const moduleData = instance.collectData();
-                if (moduleData) {
-                    this.appData[name] = { ...this.appData[name], ...moduleData };
-                }
+        this.modules.forEach(({ instance }, name) => {
+            const moduleData = instance.collectData?.();
+            if (moduleData) {
+                this.state.data[name] = { ...this.state.data[name], ...moduleData };
             }
         });
-        
-        return this.appData;
+        return this.state.data;
     },
-    
-    /**
-     * Validação - delega para módulos
-     */
+
+    // Validação de seção
     validateSection(sectionName) {
-        const moduleInfo = this.modules.get(sectionName);
-        
-        if (moduleInfo && moduleInfo.hasValidation && moduleInfo.instance) {
-            const { instance } = moduleInfo;
-            if (typeof instance.validateSection === 'function') {
-                return instance.validateSection();
-            }
-        }
-        
-        return true; // Sem validação = válido
+        const module = this.modules.get(sectionName);
+        return (module?.hasValidation && module.instance?.validateSection?.()) ?? true;
     },
-    
-    /**
-     * Preview - delega para módulos
-     */
+
+    // Gerar preview
     generatePreview() {
         let html = '<div class="preview-content">';
-        let hasAnyData = false;
-        
-        this.modules.forEach((moduleInfo, name) => {
-            const { instance, hasPreview } = moduleInfo;
+        let hasData = false;
+
+        this.modules.forEach(({ hasPreview, instance }, name) => {
+            if (!hasPreview || !instance?.generatePreview) return;
             
-            if (hasPreview && instance && typeof instance.generatePreview === 'function') {
-                const modulePreview = instance.generatePreview();
-                if (modulePreview) {
-                    hasAnyData = true;
-                    html += modulePreview;
-                }
+            const preview = instance.generatePreview();
+            if (preview) {
+                hasData = true;
+                html += preview;
             }
         });
-        
-        html += '</div>';
-        
-        return hasAnyData ? html : null;
+
+        return hasData ? html + '</div>' : null;
     },
-    
-    /**
-     * Progresso - calcula baseado em módulos registrados
-     */
+
+    // Calcular progresso
     calculateProgress() {
-        let totalSections = 0;
-        let completedSections = 0;
-        
-        this.modules.forEach((moduleInfo, name) => {
-            totalSections++;
-            
-            // Verificar se seção tem dados
-            const sectionData = this.appData[name];
-            if (this.hasSectionData(sectionData)) {
-                completedSections++;
-            }
+        let total = 0;
+        let completed = 0;
+
+        this.modules.forEach((_, name) => {
+            total++;
+            if (this.hasSectionData(this.state.data[name])) completed++;
         });
-        
-        return totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
+
+        return total > 0 ? (completed / total) * 100 : 0;
     },
-    
-    /**
-     * Verificar se seção tem dados significativos
-     */
+
+    // Verificar se seção tem dados
     hasSectionData(sectionData) {
         if (!sectionData || typeof sectionData !== 'object') return false;
         
         return Object.values(sectionData).some(value => {
-            if (typeof value === 'string') {
-                return value.trim().length > 0;
-            } else if (Array.isArray(value)) {
-                return value.length > 0;
-            } else if (typeof value === 'object' && value !== null) {
-                return Object.keys(value).length > 0;
-            }
+            if (typeof value === 'string') return value.trim().length > 0;
+            if (Array.isArray(value)) return value.length > 0;
+            if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
             return Boolean(value);
         });
     }
 };
 
-// ===========================
-// INICIALIZAÇÃO DA APLICAÇÃO
-// ===========================
+// Expor globalmente
+window.FichaTecnica = FichaTecnica;
 
-document.addEventListener('DOMContentLoaded', function() {
+// ===========================================
+// INICIALIZAÇÃO DA APLICAÇÃO
+// ===========================================
+document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Iniciando Ficha Técnica Digital...');
-    
     try {
         initializeApp();
         console.log('✅ Aplicação inicializada com sucesso');
     } catch (error) {
         console.error('❌ Erro na inicialização:', error);
-        showError('Erro ao inicializar aplicação. Detalhes: ' + error.message);
+        showError(`Erro ao inicializar: ${error.message}`);
     }
 });
 
-/**
- * Inicialização principal da aplicação
- */
 function initializeApp() {
-    // 1. Verificar elementos essenciais
     if (!validateRequiredElements()) {
         throw new Error('Elementos HTML essenciais não encontrados');
     }
-    
-    // 2. Configurar navegação
+
     setupNavigation();
-    
-    // 3. Configurar botões de ação
     setupActionButtons();
-    
-    // 4. Carregar dados salvos
-    loadDataFromStorage();
-    
-    // 5. Configurar auto-save
     setupAutoSave();
-    
-    // 6. Configurar sistema de módulos
     setupModuleSystem();
     
-    // 7. Atualizar interface inicial
-    updateUI();
-    
+    FichaTecnica.loadDataFromStorage();
+    FichaTecnica.updateUI();
     updateSaveStatus('loaded', 'Sistema carregado');
 }
 
-// ===========================
-// VALIDAÇÃO DE ELEMENTOS HTML
-// ===========================
-
-function validateRequiredElements() {
-    const requiredElements = ['navTabs', 'saveStatus', 'saveText'];
-    
-    for (const elementId of requiredElements) {
-        if (!document.getElementById(elementId)) {
-            console.error(`Elemento obrigatório não encontrado: ${elementId}`);
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-// ===========================
+// ===========================================
 // SISTEMA DE MÓDULOS
-// ===========================
-
+// ===========================================
 function setupModuleSystem() {
-    // Escutar quando módulos são registrados
-    window.FichaTecnica.on('moduleRegistered', (event) => {
-        const { name, config } = event.detail;
+    FichaTecnica.on('moduleRegistered', ({ detail: { name } }) => {
         console.log(`🔌 Módulo conectado: ${name}`);
     });
-    
-    // Escutar mudanças em seções
-    window.FichaTecnica.on('sectionChanged', (event) => {
-        const { section, data } = event.detail;
+
+    FichaTecnica.on('sectionChanged', ({ detail: { section } }) => {
         console.log(`📝 Seção ${section} modificada`);
-        
-        // Marcar como modificado
         appState.hasUnsavedChanges = true;
         updateSaveStatus('editing', 'Editando...');
     });
-    
-    // Auto-registrar seções simples descobrindo do DOM
+
     discoverSimpleSections();
 }
 
-/**
- * Descobrir seções simples automaticamente do DOM
- */
 function discoverSimpleSections() {
-    const simpleSectionSelectors = [
-        '#section-consultor',
-        '#section-cliente'
-        // Adicione aqui outras seções simples conforme necessário
-    ];
-    
-    simpleSectionSelectors.forEach(selector => {
-        const sectionElement = document.querySelector(selector);
-        if (sectionElement) {
-            const sectionName = sectionElement.id.replace('section-', '');
-            registerSimpleSection(sectionName, sectionElement);
-        }
+    const sections = ['consultor', 'cliente'];
+    sections.forEach(name => {
+        const element = document.getElementById(`section-${name}`);
+        if (element) registerSimpleSection(name, element);
     });
 }
 
-/**
- * Registrar seção simples automaticamente
- */
 function registerSimpleSection(sectionName, sectionElement) {
-    // Descobrir campos da seção
     const inputs = sectionElement.querySelectorAll('input, select, textarea');
     const fields = Array.from(inputs).map(input => {
-        // Extrair nome do campo do ID (ex: consultorNome -> nome)
-        const fieldName = input.id.replace(sectionName, '').toLowerCase();
+        const fieldName = input.id.replace(sectionName, '');
         return fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
-    }).filter(field => field.length > 0);
-    
-    // Dados padrão baseados nos campos
-    const defaultData = {};
-    fields.forEach(field => {
-        defaultData[field] = '';
-    });
-    
-    // Criar instância simples
-    const simpleInstance = createSimpleModuleInstance(sectionName, fields);
-    
-    // Registrar módulo
-    window.FichaTecnica.registerModule({
+    }).filter(Boolean);
+
+    const defaultData = fields.reduce((acc, field) => 
+        ({ ...acc, [field]: '' }), {});
+
+    FichaTecnica.registerModule({
         name: sectionName,
-        instance: simpleInstance,
+        instance: createSimpleModuleInstance(sectionName, fields),
         hasForm: true,
         hasPreview: true,
         hasValidation: true,
@@ -361,36 +226,26 @@ function registerSimpleSection(sectionName, sectionElement) {
         fields,
         defaultData
     });
-    
-    console.log(`🎯 Seção simples auto-registrada: ${sectionName}`, { fields });
 }
 
-/**
- * Criar instância de módulo simples
- */
 function createSimpleModuleInstance(sectionName, fields) {
     return {
         collectData() {
-            const data = {};
-            fields.forEach(field => {
+            return fields.reduce((data, field) => {
                 const input = document.getElementById(`${sectionName}${capitalize(field)}`);
-                if (input) {
-                    data[field] = input.value.trim();
-                }
-            });
-            return data;
+                if (input) data[field] = input.value.trim();
+                return data;
+            }, {});
         },
         
         loadData() {
-            const sectionData = window.FichaTecnica.appData[sectionName];
-            if (sectionData) {
-                fields.forEach(field => {
-                    const input = document.getElementById(`${sectionName}${capitalize(field)}`);
-                    if (input && sectionData[field]) {
-                        input.value = sectionData[field];
-                    }
-                });
-            }
+            const sectionData = FichaTecnica.state.data[sectionName];
+            if (!sectionData) return;
+            
+            fields.forEach(field => {
+                const input = document.getElementById(`${sectionName}${capitalize(field)}`);
+                if (input && sectionData[field]) input.value = sectionData[field];
+            });
         },
         
         validateSection() {
@@ -398,22 +253,12 @@ function createSimpleModuleInstance(sectionName, fields) {
             if (!sectionElement) return true;
             
             const requiredFields = sectionElement.querySelectorAll('[required]');
-            let isValid = true;
-            
-            requiredFields.forEach(field => {
-                if (!validateField(field)) {
-                    isValid = false;
-                }
-            });
-            
-            return isValid;
+            return Array.from(requiredFields).every(validateField);
         },
         
         generatePreview() {
-            const sectionData = window.FichaTecnica.appData[sectionName];
-            if (!sectionData || !window.FichaTecnica.hasSectionData(sectionData)) {
-                return null;
-            }
+            const sectionData = FichaTecnica.state.data[sectionName];
+            if (!FichaTecnica.hasSectionData(sectionData)) return null;
             
             const sectionTitles = {
                 consultor: '👤 Dados do Consultor',
@@ -421,7 +266,9 @@ function createSimpleModuleInstance(sectionName, fields) {
             };
             
             const fieldLabels = {
-                consultor: { nome: 'Nome', telefone: 'Telefone', email: 'Email' },
+                consultor: { 
+                    nome: 'Nome', telefone: 'Telefone', email: 'Email' 
+                },
                 cliente: { 
                     nome: 'Empresa', cidade: 'Cidade', contato: 'Contato', 
                     segmento: 'Segmento', telefone: 'Telefone', horario: 'Horário',
@@ -436,300 +283,121 @@ function createSimpleModuleInstance(sectionName, fields) {
             `;
             
             Object.entries(sectionData).forEach(([field, value]) => {
-                if (value) {
-                    const label = fieldLabels[sectionName]?.[field] || capitalize(field);
-                    html += `<div><strong>${label}:</strong> ${value}</div>`;
-                }
+                if (!value) return;
+                const label = fieldLabels[sectionName]?.[field] || capitalize(field);
+                html += `<div><strong>${label}:</strong> ${value}</div>`;
             });
             
-            html += '</div></div>';
-            return html;
+            return html + '</div></div>';
         }
     };
 }
 
-// ===========================
-// CONFIGURAÇÃO DA NAVEGAÇÃO
-// ===========================
-
+// ===========================================
+// NAVEGAÇÃO
+// ===========================================
 function setupNavigation() {
-    const navTabs = document.querySelectorAll('.nav-tab');
-    
-    navTabs.forEach(tab => {
-        tab.addEventListener('click', function(e) {
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', e => {
             e.preventDefault();
-            const sectionName = this.getAttribute('data-section');
-            
-            if (sectionName) {
-                showSection(sectionName);
-            }
+            const section = tab.dataset.section;
+            if (section) FichaTecnica.showSection(section);
         });
     });
     
-    // Configurar formulários simples
     setupSimpleFormHandlers();
 }
 
-/**
- * Navegar para uma seção específica
- */
 function showSection(sectionName) {
-    console.log(`📍 Navegando para seção: ${sectionName}`);
+    console.log(`📍 Navegando para: ${sectionName}`);
     
-    // Coletar dados de todas as seções
-    window.FichaTecnica.collectAllData();
+    // Coletar dados antes de validar
+    FichaTecnica.collectAllData();
     
-    // Validar seção atual se necessário
-    if (!window.FichaTecnica.validateSection(appState.currentSection)) {
-        console.warn(`❌ Validação falhou para ${appState.currentSection}`);
-        return false;
+    // Validar seção atual apenas se tiver formulário e validação
+    const currentModule = FichaTecnica.modules.get(appState.currentSection);
+    if (currentModule?.hasForm && currentModule?.hasValidation) {
+        if (!FichaTecnica.validateSection(appState.currentSection)) {
+            console.warn(`❌ Validação falhou para ${appState.currentSection}`);
+            
+            // Rolagem para o primeiro erro
+            const firstError = document.querySelector(`#section-${appState.currentSection} .error`);
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+            
+            return false;
+        }
     }
     
-    // Notificar mudança de seção
+    // Restante da lógica de navegação...
     const previousSection = appState.currentSection;
     appState.currentSection = sectionName;
     
-    // Atualizar interface
     updateTabsUI(sectionName);
     updateSectionsUI(sectionName);
     updateMobileNav(sectionName);
     
-    // Notificar módulos
-    window.FichaTecnica.emit('sectionChanged', {
+    FichaTecnica.emit('sectionChanged', {
         from: previousSection,
         to: sectionName
     });
     
-    // Ações específicas
-    if (sectionName === 'preview') {
-        updatePreview();
-    }
-    
+    if (sectionName === 'preview') updatePreview();
     return true;
 }
 
 function updateTabsUI(activeSection) {
     document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.remove('active');
+        tab.classList.toggle('active', tab.dataset.section === activeSection);
     });
-    
-    const activeTab = document.querySelector(`[data-section="${activeSection}"]`);
-    if (activeTab) {
-        activeTab.classList.add('active');
-    }
 }
 
 function updateSectionsUI(activeSection) {
     document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
+        section.classList.toggle('active', section.id === `section-${activeSection}`);
     });
-    
-    const activeElement = document.getElementById(`section-${activeSection}`);
-    if (activeElement) {
-        activeElement.classList.add('active');
-    }
 }
 
 function updateMobileNav(activeSection) {
-    const currentSectionName = document.getElementById('currentSectionName');
-    if (currentSectionName) {
-        // Buscar nas seções registradas
-        const sectionInfo = appState.registeredSections.get(activeSection);
-        currentSectionName.textContent = sectionInfo ? 
-            capitalize(activeSection) : 
-            activeSection;
-    }
+    const currentSectionElement = document.getElementById('currentSectionName');
+    if (!currentSectionElement) return;
+    
+    const sectionInfo = appState.registeredSections.get(activeSection);
+    currentSectionElement.textContent = sectionInfo ? 
+        capitalize(activeSection) : activeSection;
 }
 
-// ===========================
-// FORMULÁRIOS SIMPLES
-// ===========================
-
+// ===========================================
+// FORMULÁRIOS E VALIDAÇÃO
+// ===========================================
 function setupSimpleFormHandlers() {
-    // Auto-descobrir formulários simples
-    const simpleInputs = document.querySelectorAll('#section-consultor input, #section-consultor select, #section-cliente input, #section-cliente select');
-    
-    simpleInputs.forEach(input => {
-        input.addEventListener('input', handleInputChange);
-        input.addEventListener('change', handleInputChange);
+    const sections = ['consultor', 'cliente'];
+    sections.forEach(section => {
+        const container = document.getElementById(`section-${section}`);
+        if (!container) return;
         
-        // Formatação automática para telefone
-        if (input.type === 'tel') {
-            input.addEventListener('input', function() {
-                this.value = formatPhone(this.value);
-            });
-        }
-        
-        // Validação em tempo real
-        input.addEventListener('blur', function() {
-            validateField(this);
+        container.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('input', handleInputChange);
+            input.addEventListener('change', handleInputChange);
+            
+            if (input.type === 'tel') {
+                input.addEventListener('input', function() {
+                    this.value = FichaTecnica.formatPhone(this.value);
+                });
+            }
+            
+            input.addEventListener('blur', () => validateField(input));
         });
     });
 }
 
-function handleInputChange(event) {
+function handleInputChange() {
     appState.hasUnsavedChanges = true;
     scheduleAutoSave();
     updateSaveStatus('editing', 'Editando...');
 }
-
-// ===========================
-// BOTÕES DE AÇÃO
-// ===========================
-
-function setupActionButtons() {
-    const actionButtons = {
-        exportBtn: exportData,
-        importBtn: importData,
-        clearBtn: clearAllData,
-        printBtn: () => window.print(),
-        generatePdfBtn: generatePDF
-    };
-    
-    Object.entries(actionButtons).forEach(([id, handler]) => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.addEventListener('click', handler);
-        }
-    });
-}
-
-// ===========================
-// PERSISTÊNCIA DE DADOS
-// ===========================
-
-function loadDataFromStorage() {
-    try {
-        const saved = localStorage.getItem('fichaTecnicaData');
-        if (saved) {
-            const savedData = JSON.parse(saved);
-            
-            // Mesclar dados salvos
-            Object.keys(savedData).forEach(sectionName => {
-                if (!appData[sectionName]) {
-                    appData[sectionName] = {};
-                }
-                appData[sectionName] = { ...appData[sectionName], ...savedData[sectionName] };
-            });
-            
-            // Notificar módulos para carregar
-            setTimeout(() => {
-                window.FichaTecnica.emit('loadData', {});
-            }, 200);
-            
-            console.log('📥 Dados carregados do storage');
-        }
-    } catch (error) {
-        console.error('❌ Erro ao carregar dados:', error);
-    }
-}
-
-function saveData() {
-    try {
-        window.FichaTecnica.collectAllData();
-        localStorage.setItem('fichaTecnicaData', JSON.stringify(appData));
-        appState.hasUnsavedChanges = false;
-        appState.lastSaveTime = new Date();
-        updateSaveStatus('saved', 'Salvo automaticamente');
-        
-        window.FichaTecnica.emit('dataSaved', { timestamp: appState.lastSaveTime });
-        
-        console.log('💾 Dados salvos com sucesso');
-        return true;
-    } catch (error) {
-        console.error('❌ Erro ao salvar dados:', error);
-        updateSaveStatus('error', 'Erro ao salvar');
-        return false;
-    }
-}
-
-// ===========================
-// AUTO-SAVE
-// ===========================
-
-function setupAutoSave() {
-    setInterval(function() {
-        if (appState.hasUnsavedChanges) {
-            saveData();
-        }
-    }, 30000);
-}
-
-function scheduleAutoSave() {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => {
-        saveData();
-    }, 2000);
-}
-
-// ===========================
-// INTERFACE
-// ===========================
-
-function updateUI() {
-    updateProgress();
-    
-    if (appState.currentSection === 'preview') {
-        updatePreview();
-    }
-}
-
-function updateProgress() {
-    const progress = window.FichaTecnica.calculateProgress();
-    const progressFill = document.getElementById('progressFill');
-    const progressPercent = document.getElementById('progressPercent');
-    
-    if (progressFill) {
-        progressFill.style.width = `${progress}%`;
-    }
-    
-    if (progressPercent) {
-        progressPercent.textContent = `${Math.round(progress)}%`;
-    }
-}
-
-function updateSaveStatus(status, message) {
-    const saveStatus = document.getElementById('saveStatus');
-    const saveText = document.getElementById('saveText');
-    const saveIndicator = document.getElementById('saveIndicator');
-    
-    if (saveText) {
-        saveText.textContent = message;
-    }
-    
-    if (saveStatus) {
-        saveStatus.className = `save-status ${status}`;
-    }
-    
-    if (saveIndicator) {
-        saveIndicator.className = `save-indicator ${status}`;
-    }
-}
-
-function updatePreview() {
-    window.FichaTecnica.collectAllData();
-    
-    const previewContainer = document.getElementById('previewDocument');
-    if (!previewContainer) return;
-    
-    const previewHTML = window.FichaTecnica.generatePreview();
-    
-    if (previewHTML) {
-        previewContainer.innerHTML = previewHTML;
-    } else {
-        previewContainer.innerHTML = `
-            <div class="preview-placeholder">
-                <i class="icon-preview placeholder-icon"></i>
-                <h3>Preview da Ficha Técnica</h3>
-                <p>Preencha os dados nas seções anteriores para visualizar a ficha técnica</p>
-            </div>
-        `;
-    }
-}
-
-// ===========================
-// VALIDAÇÃO
-// ===========================
 
 function validateField(field) {
     const value = field.value.trim();
@@ -741,7 +409,7 @@ function validateField(field) {
     if (field.required && !value) {
         isValid = false;
         errorMessage = 'Campo obrigatório';
-    } else if (field.type === 'email' && value && !isValidEmail(value)) {
+    } else if (field.type === 'email' && value && !FichaTecnica.isValidEmail(value)) {
         isValid = false;
         errorMessage = 'Email inválido';
     }
@@ -755,32 +423,142 @@ function validateField(field) {
         }
     } else {
         const errorElement = document.getElementById(`${field.id}-error`);
-        if (errorElement) {
-            errorElement.style.display = 'none';
-        }
+        if (errorElement) errorElement.style.display = 'none';
     }
     
     return isValid;
 }
 
-// ===========================
-// AÇÕES
-// ===========================
+// ===========================================
+// PERSISTÊNCIA DE DADOS
+// ===========================================
+function loadDataFromStorage() {
+    try {
+        const saved = localStorage.getItem('fichaTecnicaData');
+        if (!saved) return;
+        
+        const savedData = JSON.parse(saved);
+        Object.keys(savedData).forEach(section => {
+            if (!appState.data[section]) appState.data[section] = {};
+            appState.data[section] = { ...appState.data[section], ...savedData[section] };
+        });
+        
+        setTimeout(() => FichaTecnica.emit('loadData', {}), 200);
+        console.log('📥 Dados carregados do storage');
+    } catch (error) {
+        console.error('❌ Erro ao carregar dados:', error);
+    }
+}
+
+function saveData() {
+    try {
+        FichaTecnica.collectAllData();
+        localStorage.setItem('fichaTecnicaData', JSON.stringify(appState.data));
+        
+        appState.hasUnsavedChanges = false;
+        appState.lastSaveTime = new Date();
+        updateSaveStatus('saved', 'Salvo automaticamente');
+        
+        FichaTecnica.emit('dataSaved', { timestamp: appState.lastSaveTime });
+        console.log('💾 Dados salvos com sucesso');
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao salvar dados:', error);
+        updateSaveStatus('error', 'Erro ao salvar');
+        return false;
+    }
+}
+
+// ===========================================
+// AUTO-SAVE
+// ===========================================
+function setupAutoSave() {
+    setInterval(() => {
+        if (appState.hasUnsavedChanges) saveData();
+    }, AUTO_SAVE_INTERVAL);
+}
+
+function scheduleAutoSave() {
+    clearTimeout(appTimers.save);
+    appTimers.save = setTimeout(saveData, AUTO_SAVE_DELAY);
+}
+
+// ===========================================
+// INTERFACE DO USUÁRIO
+// ===========================================
+function updateUI() {
+    updateProgress();
+    if (appState.currentSection === 'preview') updatePreview();
+}
+
+function updateProgress() {
+    const progress = FichaTecnica.calculateProgress();
+    const progressFill = document.getElementById('progressFill');
+    const progressPercent = document.getElementById('progressPercent');
+    
+    if (progressFill) progressFill.style.width = `${progress}%`;
+    if (progressPercent) progressPercent.textContent = `${Math.round(progress)}%`;
+}
+
+function updateSaveStatus(status, message) {
+    const elements = {
+        text: document.getElementById('saveText'),
+        status: document.getElementById('saveStatus'),
+        indicator: document.getElementById('saveIndicator')
+    };
+    
+    if (elements.text) elements.text.textContent = message;
+    if (elements.status) elements.status.className = `save-status ${status}`;
+    if (elements.indicator) elements.indicator.className = `save-indicator ${status}`;
+}
+
+function updatePreview() {
+    FichaTecnica.collectAllData();
+    const previewContainer = document.getElementById('previewDocument');
+    if (!previewContainer) return;
+    
+    const previewHTML = FichaTecnica.generatePreview();
+    previewContainer.innerHTML = previewHTML || `
+        <div class="preview-placeholder">
+            <i class="icon-preview placeholder-icon"></i>
+            <h3>Preview da Ficha Técnica</h3>
+            <p>Preencha os dados nas seções anteriores para visualizar</p>
+        </div>
+    `;
+}
+
+// ===========================================
+// AÇÕES (IMPORTAR/EXPORTAR/LIMPAR)
+// ===========================================
+function setupActionButtons() {
+    const actions = {
+        exportBtn: exportData,
+        importBtn: importData,
+        clearBtn: clearAllData,
+        printBtn: () => window.print(),
+        generatePdfBtn: generatePDF
+    };
+    
+    Object.entries(actions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) button.addEventListener('click', handler);
+    });
+}
 
 function exportData() {
     try {
-        window.FichaTecnica.collectAllData();
-        const dataStr = JSON.stringify(appData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        FichaTecnica.collectAllData();
+        const dataStr = JSON.stringify(appState.data, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
         
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
+        link.href = URL.createObjectURL(blob);
         link.download = `ficha-tecnica-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         
         updateSaveStatus('exported', 'Dados exportados');
     } catch (error) {
-        showError('Erro ao exportar dados: ' + error.message);
+        showError(`Erro ao exportar: ${error.message}`);
     }
 }
 
@@ -788,74 +566,450 @@ function importData() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    
-    input.onchange = function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    Object.assign(appData, importedData);
-                    
-                    window.FichaTecnica.emit('loadData', {});
-                    saveData();
-                    updateSaveStatus('imported', 'Dados importados');
-                } catch (error) {
-                    showError('Erro ao importar arquivo: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        }
-    };
-    
+    input.onchange = handleFileImport;
     input.click();
 }
 
-function clearAllData() {
-    if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
-        // Reset completo
-        Object.keys(appData).forEach(key => {
-            appData[key] = {};
-        });
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = processImportedFile;
+    reader.readAsText(file);
+}
+
+function processImportedFile(event) {
+    try {
+        const importedData = JSON.parse(event.target.result);
+        Object.assign(appState.data, importedData);
+        restoreInterfaceSimple(importedData);
         
-        // Notificar módulos
-        window.FichaTecnica.emit('clearData', {});
-        
-        // Limpar storage
-        localStorage.removeItem('fichaTecnicaData');
-        
-        updateUI();
-        updateSaveStatus('cleared', 'Dados limpos');
-        showSection('consultor');
+        // Processamento assíncrono com correções
+        setTimeout(startImportCorrection, 2500, importedData);
+    } catch (error) {
+        handleImportError(error);
     }
+}
+
+function startImportCorrection(importedData) {
+    console.log('🎯 Iniciando correção completa...');
+    
+    forceCompleteDataUpdate();
+    setTimeout(() => {
+        forceRegisterActiveDevices();
+        setTimeout(() => {
+            forcePopulateDeviceFields();
+            setTimeout(verifyFieldPopulation, 500);
+            setTimeout(forceFixAcionamentos, 1200);
+            setTimeout(finalValidationCheck, 2000);
+        }, 800);
+    }, 1000);
+    
+    FichaTecnica.emit('loadData', importedData);
+    saveData();
+    updateUI();
+    updateSaveStatus('imported', 'Dados importados com correção');
+}
+
+function finalValidationCheck() {
+    console.log('🧪 Testando validações finais...');
+    testAllValidations();
+    
+    setTimeout(() => {
+        const segValid = FichaTecnica.validateSection('seguranca');
+        const acionValid = FichaTecnica.validateSection('acionamentos');
+        const fieldsResult = verifyFieldPopulation();
+        
+        console.log(`🎯 RESULTADO FINAL:
+  - Segurança: ${segValid ? '✅' : '❌'}
+  - Acionamentos: ${acionValid ? '✅' : '❌'}
+  - Campos: ${fieldsResult.success}/${fieldsResult.total}`);
+    }, 1000);
+}
+
+function handleImportError(error) {
+    console.error('❌ Erro na importação:', error);
+    showError(`Erro ao importar: ${error.message}`);
+}
+
+function clearAllData() {
+    if (!confirm('Tem certeza que deseja limpar todos os dados?')) return;
+    
+    Object.keys(appState.data).forEach(key => {
+        appState.data[key] = {};
+    });
+    
+    FichaTecnica.emit('clearData', {});
+    localStorage.removeItem('fichaTecnicaData');
+    
+    updateUI();
+    updateSaveStatus('cleared', 'Dados limpos');
+    FichaTecnica.showSection('consultor');
 }
 
 function generatePDF() {
     alert('Funcionalidade de PDF será implementada em breve!');
 }
 
-// ===========================
-// UTILITÁRIOS
-// ===========================
+// ===========================================
+// FUNÇÕES DE CORREÇÃO DE DADOS
+// ===========================================
+function restoreInterfaceSimple(data) {
+    restoreBasicFields(data);
+    restoreMachineCheckboxes(data);
+    restoreDevicesSafe(data);
+    restoreAcionamentosSafe(data);
+    restoreInfrastructureSafe(data);
+    restoreObservacoesSafe(data);
+}
+
+function restoreBasicFields(data) {
+    const fieldMap = [
+        // Consultor
+        [data.consultor?.nome, 'consultorNome'],
+        [data.consultor?.telefone, 'consultorTelefone'],
+        [data.consultor?.email, 'consultorEmail'],
+        
+        // Cliente
+        [data.cliente?.nome, 'clienteNome'],
+        [data.cliente?.cidade, 'clienteCidade'],
+        [data.cliente?.contato, 'clienteContato'],
+        [data.cliente?.segmento, 'clienteSegmento'],
+        [data.cliente?.telefone, 'clienteTelefone'],
+        [data.cliente?.horario, 'clienteHorario'],
+        [data.cliente?.email, 'clienteEmail'],
+        [data.cliente?.turnos, 'clienteTurnos'],
+        
+        // Máquina
+        [data.maquina?.nome, 'maquinaNome'],
+        [data.maquina?.tensaoEntrada, 'maquinaTensaoEntrada'],
+        [data.maquina?.fase, 'maquinaFase'],
+        [data.maquina?.neutro, 'maquinaNeutro'],
+        [data.maquina?.tensaoComando, 'maquinaTensaoComando'],
+        [data.maquina?.tipoControle, 'maquinaTipoControle']
+    ];
+    
+    fieldMap.forEach(([value, id]) => {
+        const field = document.getElementById(id);
+        if (field && value) field.value = value;
+    });
+}
+
+function restoreMachineCheckboxes(data) {
+    const checkboxMap = {
+        tipoDispositivo: {
+            'Novo': 'tipoNovo'
+        },
+        tipoPainel: {
+            'Aço Carbono': 'painelAco'
+        },
+        abordagem: {
+            'Painel de Automação': 'abordagemAutomacao'
+        }
+    };
+    
+    Object.entries(checkboxMap).forEach(([dataKey, mapping]) => {
+        const values = data.maquina?.[dataKey] || [];
+        values.forEach(value => {
+            const checkboxId = mapping[value];
+            if (checkboxId) {
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) checkbox.checked = true;
+            }
+        });
+    });
+}
+
+function restoreDevicesSafe(data) {
+    const sections = [
+        { name: 'seguranca', types: ['botoes', 'controladores'] },
+        { name: 'automacao', types: null }
+    ];
+    
+    sections.forEach(({ name, types }) => {
+        const sectionData = data[name];
+        if (!sectionData) return;
+        
+        if (types) {
+            types.forEach(type => {
+                const devices = sectionData[type];
+                if (!devices) return;
+                
+                Object.entries(devices).forEach(([key, device]) => {
+                    restoreDevice(key, device);
+                });
+            });
+        } else {
+            Object.entries(sectionData).forEach(([key, device]) => {
+                if (device?.quantity) restoreDevice(key, device);
+            });
+        }
+    });
+}
+
+function restoreDevice(deviceKey, deviceData) {
+    const checkbox = document.getElementById(`device-${deviceKey}`);
+    if (!checkbox) return;
+    
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    setTimeout(() => {
+        const qtyField = findField(`device-${deviceKey}`, 'quantity');
+        const obsField = findField(`device-${deviceKey}`, 'observation');
+        
+        if (qtyField && deviceData.quantity) {
+            qtyField.value = deviceData.quantity;
+            dispatchEvents(qtyField, ['input', 'change']);
+        }
+        
+        if (obsField && deviceData.observation) {
+            obsField.value = deviceData.observation;
+            dispatchEvents(obsField, ['input', 'change']);
+        }
+    }, FIELD_RESTORE_DELAY);
+}
+
+function restoreAcionamentosSafe(data) {
+    const acionamentos = data.acionamentos?.lista;
+    if (!acionamentos?.length) return;
+    
+    const quantity = data.acionamentos.quantidade || acionamentos.length;
+    const numField = document.getElementById('numAcionamentos');
+    if (!numField) return;
+    
+    numField.value = quantity;
+    numField.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    setTimeout(() => {
+        acionamentos.forEach((acionamento, index) => {
+            const num = index + 1;
+            restoreAcionamento(num, acionamento);
+        });
+    }, 1200);
+}
+
+function restoreAcionamento(num, acionamento) {
+    const tipoField = document.getElementById(`acionamento${num}Tipo`);
+    const descField = document.getElementById(`acionamento${num}Descricao`);
+    
+    if (tipoField && acionamento.tipo) {
+        tipoField.value = acionamento.tipo;
+        tipoField.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    if (descField && acionamento.descricao) descField.value = acionamento.descricao;
+    
+    setTimeout(() => {
+        if (acionamento.tipo === 'Motor') {
+            setFieldValue(`acionamento${num}Potencia`, acionamento.potencia);
+            setFieldValue(`acionamento${num}TipoMotor`, acionamento.tipoMotor);
+        } else if (['Hidráulico', 'Pneumático'].includes(acionamento.tipo)) {
+            setFieldValue(`acionamento${num}Diametro`, acionamento.diametro);
+        }
+    }, 300);
+}
+
+function restoreInfrastructureSafe(data) {
+    const infraData = data.infraestrutura;
+    if (!infraData) return;
+    
+    const fields = [
+        'pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido',
+        'fixacaoPainel', 'fixacaoDispositivo', 'distanciaEnergia', 
+        'distanciaAr', 'protocoloBase'
+    ];
+    
+    fields.forEach(field => setFieldValue(field, infraData[field]));
+    
+    // Protocolos e horários
+    restoreCheckboxGroup(infraData.protocoloOpcoes, {
+        'Sinal Analógico 0-10v': 'protocoloAnalogico0_10v',
+        'Sinal Analógico 4-20mA': 'protocoloAnalogico4_20mA',
+        'Sinal Digital': 'protocoloDigital',
+        'Sistema Independente': 'protocoloSistemaIndependente'
+    });
+    
+    restoreCheckboxGroup(infraData.horarioTrabalho, {
+        'ADM (8h - 18h)': 'horarioADM',
+        'Final de Semana': 'horarioFinalSemana',
+        'Feriado': 'horarioFeriado'
+    });
+}
+
+function restoreObservacoesSafe(data) {
+    const obsData = data.observacoes;
+    if (!obsData) return;
+    
+    const fields = [
+        'consideracoesTecnicas', 'cronogramaPrazos',
+        'requisitosEspeciais', 'documentosNecessarios'
+    ];
+    
+    fields.forEach(field => setFieldValue(field, obsData[field]));
+}
+
+function restoreCheckboxGroup(values, mapping) {
+    if (!values) return;
+    values.forEach(value => {
+        const checkboxId = mapping[value];
+        if (checkboxId) setCheckbox(checkboxId, true);
+    });
+}
+
+function forceCompleteDataUpdate() {
+    FichaTecnica.modules.forEach(({ instance }, name) => {
+        const moduleData = instance.collectData?.();
+        if (moduleData) FichaTecnica.state.data[name] = moduleData;
+    });
+    saveData();
+}
+
+function forceRegisterActiveDevices() {
+    registerSectionDevices('seguranca');
+    registerSectionDevices('automacao');
+}
+
+function registerSectionDevices(sectionName) {
+    const module = FichaTecnica.modules.get(sectionName)?.instance;
+    if (!module || !module.activeDevices) return;
+    
+    const sectionElement = document.getElementById(`section-${sectionName}`);
+    if (!sectionElement) return;
+    
+    sectionElement.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+        const deviceId = checkbox.id;
+        const qtyField = findField(deviceId, 'quantity');
+        const obsField = findField(deviceId, 'observation');
+        
+        module.activeDevices.set(deviceId, {
+            quantity: qtyField?.value || '1',
+            observation: obsField?.value || '',
+            element: checkbox
+        });
+    });
+}
+
+function forceFixAcionamentos() {
+    const module = FichaTecnica.modules.get('acionamentos')?.instance;
+    if (!module) return;
+    
+    const numField = document.getElementById('numAcionamentos');
+    if (numField && numField.value) {
+        module.currentQuantity = parseInt(numField.value) || 0;
+    }
+}
+
+function forcePopulateDeviceFields() {
+    const devices = [
+        'emergencia', 'rearme', 'sc26', 'botaoPulso', 
+        'pedaleiraOperacao', 'sensorCapacitivo'
+    ];
+    
+    devices.forEach(device => {
+        const deviceData = FichaTecnica.state.data.seguranca?.botoes?.[device] || 
+                          FichaTecnica.state.data.seguranca?.controladores?.[device] ||
+                          FichaTecnica.state.data.automacao?.[device];
+        
+        if (!deviceData) return;
+        
+        setFieldValue(`qty-${device}`, deviceData.quantity);
+        setFieldValue(`obs-${device}`, deviceData.observation || '');
+    });
+}
+
+// ===========================================
+// FUNÇÕES UTILITÁRIAS
+// ===========================================
+function validateRequiredElements() {
+    const requiredIds = ['navTabs', 'saveStatus', 'saveText'];
+    return requiredIds.every(id => document.getElementById(id));
+}
+
+function findField(deviceId, fieldType) {
+    const cleanId = deviceId.replace('device-', '');
+    const prefix = fieldType === 'quantity' ? 'qty' : 'obs';
+    const possibleIds = [
+        `${prefix}-${cleanId}`,
+        `${prefix}${capitalize(cleanId)}`,
+        `${fieldType}-${cleanId}`,
+        `${cleanId}-${prefix}`
+    ];
+    
+    for (const id of possibleIds) {
+        const field = document.getElementById(id);
+        if (field) return field;
+    }
+    
+    // Fallback: buscar próximo ao checkbox
+    const checkbox = document.getElementById(deviceId);
+    if (!checkbox) return null;
+    
+    const container = checkbox.closest('.device-item, .form-group, .device-row');
+    if (!container) return null;
+    
+    return container.querySelector(
+        fieldType === 'quantity' ? 
+        'input[type="number"]' : 
+        'textarea, input[type="text"]:not([type="checkbox"])'
+    );
+}
+
+function setFieldValue(fieldId, value) {
+    if (!value) return;
+    const field = document.getElementById(fieldId);
+    if (field) field.value = value;
+}
+
+function setCheckbox(checkboxId, checked) {
+    const checkbox = document.getElementById(checkboxId);
+    if (checkbox) checkbox.checked = checked;
+}
+
+function dispatchEvents(element, events) {
+    events.forEach(type => {
+        element.dispatchEvent(new Event(type, { bubbles: true }));
+    });
+}
+
+function testAllValidations() {
+    FichaTecnica.modules.forEach(({ hasValidation, instance }, name) => {
+        if (!hasValidation || !instance?.validateSection) return;
+        console.log(`${instance.validateSection() ? '✅' : '❌'} ${name}`);
+    });
+}
+
+function verifyFieldPopulation() {
+    const devices = [
+        'emergencia', 'rearme', 'sc26', 'botaoPulso', 
+        'pedaleiraOperacao', 'sensorCapacitivo'
+    ];
+    
+    const result = devices.reduce((acc, device) => {
+        const field = document.getElementById(`qty-${device}`);
+        if (!field) return acc;
+        
+        acc.total++;
+        if (field.value && field.value !== '0') acc.success++;
+        return acc;
+    }, { success: 0, total: 0 });
+    
+    console.log(`📊 Campos preenchidos: ${result.success}/${result.total}`);
+    return result;
+}
 
 function formatPhone(phone) {
     const cleaned = phone.replace(/\D/g, '');
     
-    if (cleaned.length <= 2) {
-        return cleaned;
-    } else if (cleaned.length <= 7) {
-        return cleaned.replace(/(\d{2})(\d+)/, '($1) $2');
-    } else if (cleaned.length <= 11) {
-        return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    } else {
-        return cleaned.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
-    }
+    if (cleaned.length <= 2) return cleaned;
+    if (cleaned.length <= 7) return cleaned.replace(/(\d{2})(\d+)/, '($1) $2');
+    if (cleaned.length <= 11) return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    return cleaned.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
 }
 
 function isValidEmail(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function showError(message) {
@@ -867,35 +1021,30 @@ function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// ===========================
+// ===========================================
 // NAVEGAÇÃO POR TECLADO
-// ===========================
-
-document.addEventListener('keydown', function (e) {
-    if (e.ctrlKey && e.key === 'ArrowRight') {
+// ===========================================
+document.addEventListener('keydown', e => {
+    if (!e.ctrlKey) return;
+    
+    if (e.key === 'ArrowRight') {
         e.preventDefault();
-        goToNextSection();
-    }
-    if (e.ctrlKey && e.key === 'ArrowLeft') {
+        navigateSections(1);
+    } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        goToPrevSection();
+        navigateSections(-1);
     }
 });
 
-function goToNextSection() {
-    const sectionNames = Array.from(appState.registeredSections.keys());
-    const currentIndex = sectionNames.indexOf(appState.currentSection);
-    if (currentIndex !== -1 && currentIndex < sectionNames.length - 1) {
-        showSection(sectionNames[currentIndex + 1]);
+function navigateSections(direction) {
+    const sections = Array.from(appState.registeredSections.keys());
+    const currentIndex = sections.indexOf(appState.currentSection);
+    if (currentIndex === -1) return;
+    
+    const newIndex = currentIndex + direction;
+    if (newIndex >= 0 && newIndex < sections.length) {
+        FichaTecnica.showSection(sections[newIndex]);
     }
 }
 
-function goToPrevSection() {
-    const sectionNames = Array.from(appState.registeredSections.keys());
-    const currentIndex = sectionNames.indexOf(appState.currentSection);
-    if (currentIndex > 0) {
-        showSection(sectionNames[currentIndex - 1]);
-    }
-}
-
-console.log('📦 app.js carregado - Core modular puro');
+console.log('📦 app.js carregado - Versão refatorada');
