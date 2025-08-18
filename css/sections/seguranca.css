@@ -186,6 +186,21 @@
     font-weight: 500;
 }
 
+.device-item {
+    cursor: pointer;
+}
+
+.device-info {
+    flex: 1;
+    /* Permite que o clique seja capturado pelo container */
+    pointer-events: none; 
+}
+
+.device-info * {
+    /* Herda o pointer-events para todos os elementos dentro */
+    pointer-events: auto; 
+}
+
 /* ===========================
    RESPONSIVIDADE
    =========================== */

@@ -295,25 +295,25 @@
                     </div>
                 </div>
                 
-                <div class="section-content">
-                    <div class="intro-card automacao-intro">
-                        <div class="intro-content">
-                            <h3>🤖 Configure os Dispositivos de Automação</h3>
-                            <p>Selecione os sensores, atuadores e sistemas de controle que compõem sua solução de automação. 
-                               Configure a quantidade e observações específicas para cada dispositivo.</p>
-                        </div>
-                        
-                        <div class="summary-stats">
-                            <div class="stat-item">
-                                <span class="stat-number" id="totalDevices">0</span>
-                                <span class="stat-label">Dispositivos</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number" id="totalQuantity">0</span>
-                                <span class="stat-label">Quantidade Total</span>
-                            </div>
-                        </div>
-                    </div>
+    <div class="section-content">
+        <div class="intro-card">
+            <div class="intro-content">
+                <h3>🤖 Configure os Dispositivos de Automação</h3>
+                <p>Configure a quantidade e observações específicas para cada dispositivo.</p>
+            </div>
+            
+            <!-- ✅ VERIFICAR SE ESTES IDs EXISTEM -->
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalDevices">0</span>
+                    <span class="stat-label">Dispositivos</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="totalQuantity">0</span>
+                    <span class="stat-label">Quantidade Total</span>
+                </div>
+            </div>
+        </div>
 
                     <!-- Busca e Filtros -->
                     <div class="search-filter-container">
@@ -389,14 +389,46 @@
             }
         }
 
-        handleDeviceContainerInput(e) {
-            // Inputs de quantidade e observação
-            if (e.target.classList.contains('quantity-input') || 
-                e.target.classList.contains('observation-input')) {
-                this.updateSummaryStats();
-                this.handleFieldChange();
-            }
+        
+handleDeviceContainerInput(e) {
+    // Inputs de quantidade e observação
+    if (e.target.classList.contains('quantity-input') || 
+        e.target.classList.contains('observation-input')) {
+        
+        // ✅ CORREÇÃO: Atualizar activeDevices quando quantidade/observação mudar
+        this.updateActiveDeviceData(e.target);
+        
+        this.updateSummaryStats();
+        this.handleFieldChange();
+    }
+}
+
+updateActiveDeviceData(input) {
+    let deviceId;
+    
+    if (input.classList.contains('quantity-input')) {
+        deviceId = input.id.replace('qty-', '');
+    } else if (input.classList.contains('observation-input')) {
+        deviceId = input.id.replace('obs-', '');
+    } else {
+        return;
+    }
+    
+    // Verificar se o device está ativo
+    if (this.activeDevices.has(deviceId)) {
+        const data = this.activeDevices.get(deviceId);
+        
+        // Atualizar os dados
+        if (input.classList.contains('quantity-input')) {
+            data.quantity = input.value || '1';
+        } else {
+            data.observation = input.value || '';
         }
+        
+        this.activeDevices.set(deviceId, data);
+        console.log(`🤖 Dados atualizados para ${deviceId}:`, data);
+    }
+}
 
         handleDeviceContainerChange(e) {
             // Validação de quantidade
@@ -406,36 +438,52 @@
         }
 
         setupSearchAndFilters() {
-            // Busca
-            this.searchInput = document.getElementById('deviceSearch');
-            const searchClear = document.getElementById('searchClear');
+    // Busca
+    this.searchInput = this.sectionElement.querySelector('#deviceSearch');
+    const searchClear = this.sectionElement.querySelector('#searchClear');
 
-            if (this.searchInput) {
-                this.searchInput.addEventListener('input', (e) => {
-                    this.handleSearch(e.target.value);
-                    searchClear.style.display = e.target.value ? 'block' : 'none';
-                });
-            }
+    console.log(`🔍 Search input encontrado: ${!!this.searchInput}`);
+    console.log(`❌ Search clear encontrado: ${!!searchClear}`);
 
+    if (this.searchInput) {
+        this.searchInput.addEventListener('input', (e) => {
+            this.handleSearch(e.target.value);
             if (searchClear) {
-                searchClear.addEventListener('click', () => {
-                    this.searchInput.value = '';
-                    this.handleSearch('');
-                    searchClear.style.display = 'none';
-                });
+                searchClear.style.display = e.target.value ? 'block' : 'none';
             }
+        });
+    }
 
-            // Filtros por categoria
-            document.querySelectorAll('.filter-chip').forEach(chip => {
-                chip.addEventListener('click', (e) => {
-                    this.handleFilter(e.target.getAttribute('data-filter'));
-                    
-                    // Atualizar UI dos chips
-                    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-                    e.target.classList.add('active');
-                });
-            });
-        }
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            if (this.searchInput) {
+                this.searchInput.value = '';
+                this.handleSearch('');
+                searchClear.style.display = 'none';
+            }
+        });
+    }
+
+    // ✅ BUSCAR filtros dentro da seção específica
+    const filterChips = this.sectionElement.querySelectorAll('.filter-chip');
+    console.log(`🏷️ Filter chips encontrados: ${filterChips.length}`);
+
+    filterChips.forEach((chip, index) => {
+        const filterValue = chip.getAttribute('data-filter');
+        console.log(`🏷️ Chip ${index}: ${filterValue}`);
+        
+        chip.addEventListener('click', (e) => {
+            const filterCategory = e.target.getAttribute('data-filter');
+            console.log(`🏷️ Clicou no filtro: ${filterCategory}`);
+            
+            this.handleFilter(filterCategory);
+            
+            // Atualizar UI dos chips
+            filterChips.forEach(c => c.classList.remove('active'));
+            e.target.classList.add('active');
+        });
+    });
+}
 
         handleSearch(searchTerm) {
             const term = searchTerm.toLowerCase().trim();
@@ -453,26 +501,42 @@
             this.updateCategoryVisibility();
         }
 
-        handleFilter(filterCategory) {
-            const categories = document.querySelectorAll('.device-category');
+handleFilter(filterCategory) {
+    console.log(`🔍 Filtrando por: ${filterCategory}`);
+    
+    const categories = this.sectionElement.querySelectorAll('.device-category');
+    console.log(`📊 Encontradas ${categories.length} categorias`);
 
-            categories.forEach(category => {
-                if (filterCategory === 'all') {
-                    category.style.display = 'block';
-                } else {
-                    const categoryId = category.getAttribute('data-categoria');
-                    category.style.display = categoryId === filterCategory ? 'block' : 'none';
-                }
-            });
-
-            // Limpar busca ao filtrar
-            if (this.searchInput) {
-                this.searchInput.value = '';
-                document.getElementById('searchClear').style.display = 'none';
-                this.handleSearch('');
+    categories.forEach((category, index) => {
+        const categoryId = category.getAttribute('data-categoria');
+        
+        // ✅ USAR CLASSES ao invés de style inline
+        category.classList.remove('filter-hidden', 'filter-visible');
+        
+        if (filterCategory === 'all') {
+            category.classList.add('filter-visible');
+            console.log(`📂 Categoria ${categoryId}: VISÍVEL (classe)`);
+        } else {
+            const shouldShow = categoryId === filterCategory;
+            if (shouldShow) {
+                category.classList.add('filter-visible');
+                console.log(`📂 Categoria ${categoryId}: VISÍVEL (classe)`);
+            } else {
+                category.classList.add('filter-hidden');
+                console.log(`📂 Categoria ${categoryId}: ESCONDIDA (classe)`);
             }
         }
+    });
 
+    // Limpar busca
+    if (this.searchInput) {
+        this.searchInput.value = '';
+        const searchClear = this.sectionElement.querySelector('#searchClear');
+        if (searchClear) searchClear.style.display = 'none';
+    }
+    
+    console.log(`✅ Filtro ${filterCategory} aplicado com classes CSS`);
+}
         updateCategoryVisibility() {
             document.querySelectorAll('.device-category').forEach(category => {
                 const visibleDevices = category.querySelectorAll('.device-item[style*="flex"], .device-item:not([style])');
@@ -548,61 +612,78 @@
         }
 
         validateQuantityInput(input) {
-            const value = parseInt(input.value) || 0;
-            
-            if (value < 1) {
-                input.value = '1';
-            } else if (value > MAX_QUANTITY_PER_DEVICE) {
-                input.value = MAX_QUANTITY_PER_DEVICE;
-                this.showQuantityLimitWarning();
-            }
-            
-            // Atualizar dados ativos
-            const deviceId = input.id.replace('qty-', '');
-            if (this.activeDevices.has(deviceId)) {
-                const data = this.activeDevices.get(deviceId);
-                data.quantity = input.value;
-                this.activeDevices.set(deviceId, data);
-            }
-        }
+    const value = parseInt(input.value) || 0;
+    
+    if (value < 1) {
+        input.value = '1';
+    } else if (value > MAX_QUANTITY_PER_DEVICE) {
+        input.value = MAX_QUANTITY_PER_DEVICE;
+        this.showQuantityLimitWarning();
+    }
+    
+    // ✅ CORREÇÃO: Usar o novo método para atualizar dados
+    this.updateActiveDeviceData(input);
+    
+    // ✅ ADICIONAR: Forçar atualização dos contadores
+    this.updateCategoryCounters();
+    this.updateSummaryStats();
+    
+    console.log(`🔢 Quantidade validada: ${input.value} para ${input.id}`);
+}
 
         updateCategoryCounters() {
-            AUTOMACAO_CONFIG.categorias.forEach(categoria => {
-                const categoryElement = document.querySelector(`[data-categoria="${categoria.id}"]`);
-                if (!categoryElement) return;
-
-                const activeDevices = categoryElement.querySelectorAll('.device-item.active').length;
-                const counterText = categoryElement.querySelector('.counter-text');
-                
-                if (counterText) {
-                    counterText.textContent = `${activeDevices} selecionado${activeDevices !== 1 ? 's' : ''}`;
-                }
-            });
+    AUTOMACAO_CONFIG.categorias.forEach(categoria => {
+        // ✅ BUSCAR dentro da seção específica
+        const categoryElement = this.sectionElement.querySelector(`[data-categoria="${categoria.id}"]`);
+        if (!categoryElement) {
+            console.warn(`🤖 Categoria não encontrada: ${categoria.id}`);
+            return;
         }
 
-        updateSummaryStats() {
-            const totalDevicesElement = document.getElementById('totalDevices');
-            const totalQuantityElement = document.getElementById('totalQuantity');
-            
-            const totalDevices = this.activeDevices.size;
-            let totalQuantity = 0;
-            
-            this.activeDevices.forEach((data) => {
-                totalQuantity += parseInt(data.quantity) || 0;
-            });
-            
-            if (totalDevicesElement) {
-                totalDevicesElement.textContent = totalDevices;
-                totalDevicesElement.classList.add('updated');
-                setTimeout(() => totalDevicesElement.classList.remove('updated'), 600);
-            }
-            
-            if (totalQuantityElement) {
-                totalQuantityElement.textContent = totalQuantity;
-                totalQuantityElement.classList.add('updated');
-                setTimeout(() => totalQuantityElement.classList.remove('updated'), 600);
-            }
+        const activeDevices = categoryElement.querySelectorAll('.device-item.active').length;
+        const counterText = categoryElement.querySelector('.counter-text');
+        
+        if (counterText) {
+            counterText.textContent = `${activeDevices} selecionado${activeDevices !== 1 ? 's' : ''}`;
+        } else {
+            console.warn(`🤖 Counter text não encontrado para categoria: ${categoria.id}`);
         }
+    });
+}
+
+
+updateSummaryStats() {
+    const totalDevicesElement = this.sectionElement.querySelector('#totalDevices') || 
+                               this.sectionElement.querySelector('.stat-number[data-stat="devices"]');
+    const totalQuantityElement = this.sectionElement.querySelector('#totalQuantity') ||
+                                this.sectionElement.querySelector('.stat-number[data-stat="quantity"]');
+    
+    const totalDevices = this.activeDevices.size;
+    let totalQuantity = 0;
+    
+    this.activeDevices.forEach((data) => {
+        const qty = parseInt(data.quantity) || 0;
+        totalQuantity += qty;
+    });
+    
+    console.log(`📊 Calculando stats: ${totalDevices} dispositivos, ${totalQuantity} quantidade`);
+    
+    if (totalDevicesElement) {
+        totalDevicesElement.textContent = totalDevices;
+        totalDevicesElement.classList.add('updated');
+        setTimeout(() => totalDevicesElement.classList.remove('updated'), 600);
+    } else {
+        console.warn('🤖 Elemento totalDevices não encontrado');
+    }
+    
+    if (totalQuantityElement) {
+        totalQuantityElement.textContent = totalQuantity;
+        totalQuantityElement.classList.add('updated');
+        setTimeout(() => totalQuantityElement.classList.remove('updated'), 600);
+    } else {
+        console.warn('🤖 Elemento totalQuantity não encontrado');
+    }
+}
 
         showDeviceCountWarning() {
             const message = `Você selecionou ${this.activeDevices.size} dispositivos. ` +

@@ -18,8 +18,7 @@
     <link rel="stylesheet" href="css/sections/maquina.css">
     <link rel="stylesheet" href="css/sections/acionamentos.css">
     <link rel="stylesheet" href="css/sections/observacoes.css">
-
-  
+    
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/icons/favicon.png">
     
@@ -86,9 +85,9 @@
                         <i class="icon-clear"></i>
                         Limpar
                     </button>
-                      <button id="cleanCacheBtn" class="btn btn-secondary" title="Limpar cache de dados antigos">
-      🧹 Limpar Cache
-  </button>
+                    <button id="cleanCacheBtn" class="btn btn-secondary" title="Limpar cache de dados antigos">
+                        🧹 Limpar Cache
+                    </button>
                 </div>
             </div>
         </section>
@@ -297,7 +296,7 @@
                 </div>
             </section>
 
-            <!-- Placeholder para outras seções -->
+            <!-- Seções que os módulos JS esperam encontrar -->
             <section class="section" id="section-maquina" data-section="maquina">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -308,11 +307,7 @@
                         <span class="step-counter">Passo 3 de 8</span>
                     </div>
                 </div>
-                <div class="section-placeholder">
-                    <i class="icon-gear placeholder-icon"></i>
-                    <h3>Em desenvolvimento</h3>
-                    <p>Esta seção será implementada nos próximos arquivos</p>
-                </div>
+                <!-- Conteúdo será inserido pelo módulo maquina.js -->
             </section>
 
             <section class="section" id="section-acionamentos" data-section="acionamentos">
@@ -325,11 +320,7 @@
                         <span class="step-counter">Passo 4 de 8</span>
                     </div>
                 </div>
-                <div class="section-placeholder">
-                    <i class="icon-engine placeholder-icon"></i>
-                    <h3>Em desenvolvimento</h3>
-                    <p>Esta seção será implementada nos próximos arquivos</p>
-                </div>
+                <!-- Conteúdo será inserido pelo módulo acionamentos.js -->
             </section>
 
             <section class="section" id="section-seguranca" data-section="seguranca">
@@ -342,11 +333,7 @@
                         <span class="step-counter">Passo 5 de 8</span>
                     </div>
                 </div>
-                <div class="section-placeholder">
-                    <i class="icon-shield placeholder-icon"></i>
-                    <h3>Em desenvolvimento</h3>
-                    <p>Esta seção será implementada nos próximos arquivos</p>
-                </div>
+                <!-- Conteúdo será inserido pelo módulo seguranca.js -->
             </section>
 
             <section class="section" id="section-automacao" data-section="automacao">
@@ -359,11 +346,7 @@
                         <span class="step-counter">Passo 6 de 8</span>
                     </div>
                 </div>
-                <div class="section-placeholder">
-                    <i class="icon-robot placeholder-icon"></i>
-                    <h3>Em desenvolvimento</h3>
-                    <p>Esta seção será implementada nos próximos arquivos</p>
-                </div>
+                <!-- Conteúdo será inserido pelo módulo automacao.js -->
             </section>
 
             <section class="section" id="section-infraestrutura" data-section="infraestrutura">
@@ -376,11 +359,7 @@
                         <span class="step-counter">Passo 7 de 8</span>
                     </div>
                 </div>
-                <div class="section-placeholder">
-                    <i class="icon-network placeholder-icon"></i>
-                    <h3>Em desenvolvimento</h3>
-                    <p>Esta seção será implementada nos próximos arquivos</p>
-                </div>
+                <!-- Conteúdo será inserido pelo módulo infraestrutura.js -->
             </section>
 
             <section class="section" id="section-observacoes" data-section="observacoes">
@@ -393,11 +372,7 @@
                         <span class="step-counter">Passo 8 de 8</span>
                     </div>
                 </div>
-                <div class="section-placeholder">
-                    <i class="icon-notes placeholder-icon"></i>
-                    <h3>Em desenvolvimento</h3>
-                    <p>Esta seção será implementada nos próximos arquivos</p>
-                </div>
+                <!-- Conteúdo será inserido pelo módulo observacoes.js -->
             </section>
 
             <!-- Seção: Preview/Visualização -->
@@ -468,23 +443,35 @@
     <div class="modal-overlay" id="modalOverlay">
         <!-- Modais serão inseridos dinamicamente aqui -->
     </div>
-    <!-- Bibliotecas externas -->
+    
+<!-- Bibliotecas externas -->
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <!-- JavaScript -->
-<script src="js/app.js" defer></script>
+
+<!-- Sistema de PDF (tema + gerador) -->
+<script src="js/pdf/pdfThemeConfig.js"></script>
+<script src="js/pdf/pdfGenerator.js"></script>
+
+<!-- Core refatorado -->
+<script src="js/cores/app.js" defer></script>
+
+<!-- Sistemas complementares -->
+<script src="js/cores/dataManager.js" defer></script>
+<script src="js/cores/formValidator.js" defer></script>
+<script src="js/cores/storageManager.js" defer></script>
+
+<!-- Seções -->
 <script src="js/sections/maquina.js" defer></script>
 <script src="js/sections/acionamentos.js" defer></script>
 <script src="js/sections/seguranca.js" defer></script>
 <script src="js/sections/automacao.js" defer></script>
 <script src="js/sections/infraestrutura.js" defer></script>
 <script src="js/sections/observacoes.js" defer></script>
+
+<!-- Gerenciadores -->
 <script src="js/formManager.js" defer></script>
 <script src="js/dataStorage.js" defer></script>
 <script src="js/validation.js" defer></script>
-<script src="js/pdfGenerator.js" defer></script>
-    
-
 
 </body>
 </html>

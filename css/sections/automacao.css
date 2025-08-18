@@ -409,6 +409,19 @@
     }
 }
 
+.device-category.filter-hidden {
+    display: none !important;
+}
+
+.device-category.filter-visible {
+    display: block !important;
+}
+
+/* Garantir que as categorias sejam visíveis por padrão */
+.device-category {
+    display: block;
+}
+
 /* ===========================
    RESPONSIVIDADE
    =========================== */

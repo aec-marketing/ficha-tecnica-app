@@ -1,539 +1,440 @@
 /**
- * SEÇÃO INFRAESTRUTURA - infraestrutura.js
- * Módulo para dados de infraestrutura do cliente
- * 
- * Funcionalidades:
- * - Campos com opções padrão + "Outro"
- * - Validação de distâncias
- * - Protocolos de comunicação
- * - Horários de trabalho
+ * SEÇÃO INFRAESTRUTURA - infraestrutura.js (REFATORADO)
+ * Módulo para dados de infraestrutura do cliente - Versão conservadora
  */
 
 (function() {
     'use strict';
 
-    const MODULE_NAME = 'infraestrutura';
-    const SECTION_ID = 'section-infraestrutura';
-
-    // Configuração dos campos da infraestrutura
-    const INFRAESTRUTURA_CONFIG = {
+    // ===========================================
+    // CONFIGURAÇÃO LIMPA E ORGANIZADA
+    // ===========================================
+    const MODULE_CONFIG = {
+        name: 'infraestrutura',
+        sectionId: 'section-infraestrutura',
+        
+        // Campos dropdown com opção "Outro" - configuração mais limpa
         dropdownFields: [
             {
                 id: 'pontoAlimentacao',
                 label: 'Ponto de Alimentação',
-                options: [
-                    { value: '', label: 'Selecione...' },
-                    { value: 'Disponível no local', label: 'Disponível no local' },
-                    { value: 'Realizar instalação ao ponto', label: 'Realizar instalação ao ponto' },
-                    { value: 'outro', label: 'Outro' }
-                ],
-                hasOther: true,
-                required: false
+                options: ['', 'Disponível no local', 'Realizar instalação ao ponto', 'outro'],
+                optionLabels: ['Selecione...', 'Disponível no local', 'Realizar instalação ao ponto', 'Outro']
             },
             {
                 id: 'infraestruturaCabeamento',
                 label: 'Infraestrutura de Cabeamento',
-                options: [
-                    { value: '', label: 'Selecione...' },
-                    { value: 'Disponível', label: 'Disponível' },
-                    { value: 'Realizar instalação', label: 'Realizar instalação' },
-                    { value: 'outro', label: 'Outro' }
-                ],
-                hasOther: true,
-                required: false
+                options: ['', 'Disponível', 'Realizar instalação', 'outro'],
+                optionLabels: ['Selecione...', 'Disponível', 'Realizar instalação', 'Outro']
             },
             {
                 id: 'pontoArComprimido',
                 label: 'Ponto de Ar Comprimido',
-                options: [
-                    { value: '', label: 'Selecione...' },
-                    { value: 'Disponível', label: 'Disponível' },
-                    { value: 'Realizar instalação', label: 'Realizar instalação' },
-                    { value: 'outro', label: 'Outro' }
-                ],
-                hasOther: true,
-                required: false
+                options: ['', 'Disponível', 'Realizar instalação', 'outro'],
+                optionLabels: ['Selecione...', 'Disponível', 'Realizar instalação', 'Outro']
             },
             {
                 id: 'fixacaoPainel',
                 label: 'Fixação do Painel Elétrico',
-                options: [
-                    { value: '', label: 'Selecione...' },
-                    { value: 'Suporte no chão', label: 'Suporte no chão' },
-                    { value: 'Parede', label: 'Parede' },
-                    { value: 'outro', label: 'Outro' }
-                ],
-                hasOther: true,
-                required: false
+                options: ['', 'Suporte no chão', 'Parede', 'outro'],
+                optionLabels: ['Selecione...', 'Suporte no chão', 'Parede', 'Outro']
             },
             {
                 id: 'fixacaoDispositivo',
                 label: 'Fixação do Dispositivo',
-                options: [
-                    { value: '', label: 'Selecione...' },
-                    { value: 'Rodízio', label: 'Rodízio' },
-                    { value: 'Fixo no chão', label: 'Fixo no chão' },
-                    { value: 'outro', label: 'Outro' }
-                ],
-                hasOther: true,
-                required: false
+                options: ['', 'Rodízio', 'Fixo no chão', 'outro'],
+                optionLabels: ['Selecione...', 'Rodízio', 'Fixo no chão', 'Outro']
             }
         ],
         
+        // Campos de distância
         distanceFields: [
-            {
-                id: 'distanciaEnergia',
-                label: 'Distância - Energia (metros)',
-                placeholder: 'Ex: 15',
-                max: 1000,
-                required: false
-            },
-            {
-                id: 'distanciaAr',
-                label: 'Distância - Ar Comprimido (metros)',
-                placeholder: 'Ex: 25',
-                max: 1000,
-                required: false
-            }
+            { id: 'distanciaEnergia', label: 'Distância - Energia (metros)', placeholder: 'Ex: 15', max: 1000 },
+            { id: 'distanciaAr', label: 'Distância - Ar Comprimido (metros)', placeholder: 'Ex: 25', max: 1000 }
         ],
         
-        protocolOptions: [
-            { id: 'protocoloAnalogico0_10v', label: 'Sinal Analógico 0-10v' },
-            { id: 'protocoloAnalogico4_20mA', label: 'Sinal Analógico 4-20mA' },
-            { id: 'protocoloDigital', label: 'Sinal Digital' },
-            { id: 'protocoloSistemaIndependente', label: 'Sistema Independente' }
-        ],
+        // Checkboxes - configuração simplificada
+        checkboxGroups: {
+            protocoloOpcoes: [
+                'protocoloAnalogico0_10v|Sinal Analógico 0-10v',
+                'protocoloAnalogico4_20mA|Sinal Analógico 4-20mA',
+                'protocoloDigital|Sinal Digital',
+                'protocoloSistemaIndependente|Sistema Independente'
+            ],
+            horarioTrabalho: [
+                'horarioADM|ADM (8h - 18h)',
+                'horarioFinalSemana|Final de Semana',
+                'horarioFeriado|Feriado'
+            ]
+        },
+
+        defaultData: {
+            pontoAlimentacao: '', infraestruturaCabeamento: '', pontoArComprimido: '',
+            fixacaoPainel: '', fixacaoDispositivo: '', distanciaEnergia: '', distanciaAr: '',
+            protocoloBase: '', protocoloOpcoes: [], horarioTrabalho: []
+        }
+    };
+
+    // ===========================================
+    // TEMPLATE HTML SEPARADO
+    // ===========================================
+    const HTML_TEMPLATE = `
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="icon-network"></i>
+                Dados de Infraestrutura do Cliente
+            </h2>
+            <div class="section-progress">
+                <span class="step-counter">Passo 7 de 8</span>
+            </div>
+        </div>
         
-        horarioOptions: [
-            { id: 'horarioADM', label: 'ADM (8h - 18h)' },
-            { id: 'horarioFinalSemana', label: 'Final de Semana' },
-            { id: 'horarioFeriado', label: 'Feriado' }
-        ]
-    };
+        <div class="section-content">
+            <div class="intro-card infraestrutura-intro">
+                <div class="intro-content">
+                    <h3>🗏️ Configure a Infraestrutura</h3>
+                    <p>Defina os requisitos de infraestrutura necessários para a instalação e funcionamento 
+                       do sistema. Essas informações são essenciais para o planejamento da implementação.</p>
+                </div>
+                
+                <div class="progress-indicator">
+                    <div class="progress-step completed">
+                        <span class="step-icon">⚡</span>
+                        <span class="step-label">Energia</span>
+                    </div>
+                    <div class="progress-step">
+                        <span class="step-icon">🔧</span>
+                        <span class="step-label">Instalação</span>
+                    </div>
+                    <div class="progress-step">
+                        <span class="step-icon">📡</span>
+                        <span class="step-label">Comunicação</span>
+                    </div>
+                </div>
+            </div>
 
-    // Dados padrão
-    const DEFAULT_DATA = {
-        pontoAlimentacao: '',
-        infraestruturaCabeamento: '',
-        pontoArComprimido: '',
-        fixacaoPainel: '',
-        fixacaoDispositivo: '',
-        distanciaEnergia: '',
-        distanciaAr: '',
-        protocoloBase: '',
-        protocoloOpcoes: [],
-        horarioTrabalho: []
-    };
+            <form class="form-grid" id="infraestruturaForm">
+                
+                <!-- Seção: Pontos de Infraestrutura -->
+                <div class="form-section form-group-full">
+                    <h4 class="form-section-title">⚡ Pontos de Infraestrutura</h4>
+                    <div class="form-grid" id="dropdownsContainer">
+                        <!-- Dropdowns serão inseridos aqui -->
+                    </div>
+                </div>
 
-    // ===========================
-    // CLASSE PRINCIPAL DO MÓDULO
-    // ===========================
+                <!-- Seção: Distâncias -->
+                <div class="form-section form-group-full">
+                    <h4 class="form-section-title">📏 Distâncias</h4>
+                    <div class="form-grid" id="distancesContainer">
+                        <!-- Campos de distância serão inseridos aqui -->
+                    </div>
+                </div>
 
-    class InfraestruturalModule {
+                <!-- Seção: Protocolo de Comunicação -->
+                <div class="form-section form-group-full">
+                    <h4 class="form-section-title">📡 Protocolo de Comunicação</h4>
+                    
+                    <div class="form-group">
+                        <label for="protocoloBase" class="form-label">Protocolo Base</label>
+                        <input type="text" id="protocoloBase" name="protocoloBase" class="form-input" 
+                               placeholder="Ex: Ethernet, Profinet, Modbus RTU">
+                        <div class="form-help">Especifique o protocolo principal de comunicação</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Opções Adicionais</label>
+                        <div class="checkbox-group" id="protocolosContainer">
+                            <!-- Checkboxes de protocolo serão inseridos aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Horário de Trabalho -->
+                <div class="form-section form-group-full">
+                    <h4 class="form-section-title">🕐 Horário de Trabalho para Instalação</h4>
+                    <div class="form-group">
+                        <label class="form-label">Horários Disponíveis</label>
+                        <div class="checkbox-group" id="horariosContainer">
+                            <!-- Checkboxes de horário serão inseridos aqui -->
+                        </div>
+                        <div class="form-help">Selecione os horários em que a instalação pode ser realizada</div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+        
+        <div class="section-footer">
+            <button class="btn btn-secondary btn-prev">
+                <i class="icon-arrow-left"></i>
+                Anterior
+            </button>
+            <button class="btn btn-primary btn-next">
+                Próximo: Observações Gerais
+                <i class="icon-arrow-right"></i>
+            </button>
+        </div>
+    `;
+
+    // ===========================================
+    // CLASSE PRINCIPAL SIMPLIFICADA
+    // ===========================================
+    class InfraestruturaModule {
         constructor() {
-            this.isInitialized = false;
+            this.config = MODULE_CONFIG;
             this.sectionElement = null;
             this.otherFields = new Map();
+            this.isInitialized = false;
         }
 
         init() {
             if (this.isInitialized) return;
 
-            console.log(`🏗️ Inicializando módulo ${MODULE_NAME}`);
+            console.log(`🗏️ Inicializando módulo ${this.config.name}`);
 
             try {
-                this.sectionElement = document.getElementById(SECTION_ID);
+                this.sectionElement = document.getElementById(this.config.sectionId);
                 
                 if (!this.sectionElement) {
-                    throw new Error(`Seção ${SECTION_ID} não encontrada`);
+                    throw new Error(`Seção ${this.config.sectionId} não encontrada`);
                 }
 
-                this.createSectionHTML();
-                this.setupEventListeners();
+                this.render();
+                this.setupEvents();
                 this.registerWithCore();
 
                 this.isInitialized = true;
-                console.log(`✅ Módulo ${MODULE_NAME} inicializado`);
+                console.log(`✅ Módulo ${this.config.name} inicializado`);
 
             } catch (error) {
-                console.error(`❌ Erro ao inicializar ${MODULE_NAME}:`, error);
+                console.error(`❌ Erro ao inicializar ${this.config.name}:`, error);
                 throw error;
             }
         }
 
-        createSectionHTML() {
-            // Gerar dropdowns com campos "Outro"
-            let dropdownsHTML = '';
-            INFRAESTRUTURA_CONFIG.dropdownFields.forEach(field => {
-                const optionsHTML = field.options.map(option => 
-                    `<option value="${option.value}">${option.label}</option>`
+        render() {
+            this.sectionElement.innerHTML = HTML_TEMPLATE;
+            this.renderDropdowns();
+            this.renderDistanceFields();
+            this.renderCheckboxGroups();
+        }
+
+        renderDropdowns() {
+            const container = document.getElementById('dropdownsContainer');
+            if (!container) return;
+
+            container.innerHTML = this.config.dropdownFields.map(field => 
+                this.generateDropdownHTML(field)
+            ).join('');
+        }
+
+        renderDistanceFields() {
+            const container = document.getElementById('distancesContainer');
+            if (!container) return;
+
+            container.innerHTML = this.config.distanceFields.map(field => 
+                this.generateDistanceHTML(field)
+            ).join('');
+        }
+
+        renderCheckboxGroups() {
+            // Protocolos
+            const protocolContainer = document.getElementById('protocolosContainer');
+            if (protocolContainer) {
+                protocolContainer.innerHTML = this.config.checkboxGroups.protocoloOpcoes.map(item => 
+                    this.generateCheckboxHTML(item)
                 ).join('');
+            }
 
-                dropdownsHTML += `
-                    <div class="form-group">
-                        <label for="${field.id}" class="form-label${field.required ? ' required' : ''}">
-                            ${field.label}
-                        </label>
-                        <div class="input-with-other">
-                            <select id="${field.id}" name="${field.id}" class="form-select" ${field.required ? 'required' : ''}>
-                                ${optionsHTML}
-                            </select>
-                            ${field.hasOther ? `
-                                <input type="text" id="${field.id}Outro" class="form-input form-input-other" 
-                                       placeholder="Especificar..." style="display: none;">
-                            ` : ''}
-                        </div>
-                        ${field.required ? '<div class="form-error" id="' + field.id + '-error"></div>' : ''}
+            // Horários
+            const horarioContainer = document.getElementById('horariosContainer');
+            if (horarioContainer) {
+                horarioContainer.innerHTML = this.config.checkboxGroups.horarioTrabalho.map(item => 
+                    this.generateCheckboxHTML(item)
+                ).join('');
+            }
+        }
+
+        // ===========================================
+        // GERADORES DE HTML - MÉTODOS LIMPOS
+        // ===========================================
+
+        generateDropdownHTML(field) {
+            const optionsHTML = field.options.map((option, index) => 
+                `<option value="${option}">${field.optionLabels[index]}</option>`
+            ).join('');
+
+            return `
+                <div class="form-group">
+                    <label for="${field.id}" class="form-label">${field.label}</label>
+                    <div class="input-with-other">
+                        <select id="${field.id}" name="${field.id}" class="form-select">
+                            ${optionsHTML}
+                        </select>
+                        <input type="text" id="${field.id}Outro" class="form-input form-input-other" 
+                               placeholder="Especificar..." style="display: none;">
                     </div>
-                `;
-            });
-
-            // Gerar campos de distância
-            let distancesHTML = '';
-            INFRAESTRUTURA_CONFIG.distanceFields.forEach(field => {
-                distancesHTML += `
-                    <div class="form-group">
-                        <label for="${field.id}" class="form-label${field.required ? ' required' : ''}">
-                            ${field.label}
-                        </label>
-                        <input type="number" id="${field.id}" name="${field.id}" class="form-input" 
-                               placeholder="${field.placeholder}" min="0" max="${field.max}" step="0.1"
-                               ${field.required ? 'required' : ''}>
-                        <div class="form-help">Informe a distância em metros (máx: ${field.max}m)</div>
-                        ${field.required ? '<div class="form-error" id="' + field.id + '-error"></div>' : ''}
-                    </div>
-                `;
-            });
-
-            // Gerar checkboxes para protocolos
-            let protocolosHTML = '';
-            INFRAESTRUTURA_CONFIG.protocolOptions.forEach(option => {
-                protocolosHTML += `
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="${option.id}" value="${option.label}">
-                        <label for="${option.id}">${option.label}</label>
-                    </div>
-                `;
-            });
-
-            // Gerar checkboxes para horário
-            let horariosHTML = '';
-            INFRAESTRUTURA_CONFIG.horarioOptions.forEach(option => {
-                horariosHTML += `
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="${option.id}" value="${option.label}">
-                        <label for="${option.id}">${option.label}</label>
-                    </div>
-                `;
-            });
-
-            const html = `
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <i class="icon-network"></i>
-                        Dados de Infraestrutura do Cliente
-                    </h2>
-                    <div class="section-progress">
-                        <span class="step-counter">Passo 7 de 8</span>
-                    </div>
-                </div>
-                
-                <div class="section-content">
-                    <div class="intro-card infraestrutura-intro">
-                        <div class="intro-content">
-                            <h3>🏗️ Configure a Infraestrutura</h3>
-                            <p>Defina os requisitos de infraestrutura necessários para a instalação e funcionamento 
-                               do sistema. Essas informações são essenciais para o planejamento da implementação.</p>
-                        </div>
-                        
-                        <div class="progress-indicator">
-                            <div class="progress-step completed">
-                                <span class="step-icon">⚡</span>
-                                <span class="step-label">Energia</span>
-                            </div>
-                            <div class="progress-step">
-                                <span class="step-icon">🔧</span>
-                                <span class="step-label">Instalação</span>
-                            </div>
-                            <div class="progress-step">
-                                <span class="step-icon">📡</span>
-                                <span class="step-label">Comunicação</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form class="form-grid" id="infraestruturaForm">
-                        
-                        <!-- Seção: Pontos de Infraestrutura -->
-                        <div class="form-section form-group-full">
-                            <h4 class="form-section-title">
-                                ⚡ Pontos de Infraestrutura
-                            </h4>
-                            <div class="form-grid">
-                                ${dropdownsHTML}
-                            </div>
-                        </div>
-
-                        <!-- Seção: Distâncias -->
-                        <div class="form-section form-group-full">
-                            <h4 class="form-section-title">
-                                📏 Distâncias
-                            </h4>
-                            <div class="form-grid">
-                                ${distancesHTML}
-                            </div>
-                        </div>
-
-                        <!-- Seção: Protocolo de Comunicação -->
-                        <div class="form-section form-group-full">
-                            <h4 class="form-section-title">
-                                📡 Protocolo de Comunicação
-                            </h4>
-                            
-                            <div class="form-group">
-                                <label for="protocoloBase" class="form-label">
-                                    Protocolo Base
-                                </label>
-                                <input type="text" id="protocoloBase" name="protocoloBase" class="form-input" 
-                                       placeholder="Ex: Ethernet, Profinet, Modbus RTU">
-                                <div class="form-help">Especifique o protocolo principal de comunicação</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Opções Adicionais</label>
-                                <div class="checkbox-group">
-                                    ${protocolosHTML}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Seção: Horário de Trabalho -->
-                        <div class="form-section form-group-full">
-                            <h4 class="form-section-title">
-                                🕐 Horário de Trabalho para Instalação
-                            </h4>
-                            <div class="form-group">
-                                <label class="form-label">Horários Disponíveis</label>
-                                <div class="checkbox-group">
-                                    ${horariosHTML}
-                                </div>
-                                <div class="form-help">Selecione os horários em que a instalação pode ser realizada</div>
-                            </div>
-                        </div>
-
-                    </form>
-                </div>
-                
-                <div class="section-footer">
-                    <button class="btn btn-secondary btn-prev">
-                        <i class="icon-arrow-left"></i>
-                        Anterior
-                    </button>
-                    <button class="btn btn-primary btn-next">
-                        Próximo: Observações Gerais
-                        <i class="icon-arrow-right"></i>
-                    </button>
                 </div>
             `;
-
-            this.sectionElement.innerHTML = html;
         }
 
-        setupEventListeners() {
-            // Campos com "Outro"
-            this.setupOtherFields();
-            
-            // Campos de distância
-            this.setupDistanceFields();
-            
+        generateDistanceHTML(field) {
+            return `
+                <div class="form-group">
+                    <label for="${field.id}" class="form-label">${field.label}</label>
+                    <input type="number" id="${field.id}" name="${field.id}" class="form-input" 
+                           placeholder="${field.placeholder}" min="0" max="${field.max}" step="0.1">
+                    <div class="form-help">Informe a distância em metros (máx: ${field.max}m)</div>
+                </div>
+            `;
+        }
+
+        generateCheckboxHTML(item) {
+            const [id, label] = item.split('|');
+            return `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="${id}" value="${label}">
+                    <label for="${id}">${label}</label>
+                </div>
+            `;
+        }
+
+        // ===========================================
+        // EVENT HANDLING UNIFICADO
+        // ===========================================
+
+        setupEvents() {
+            // Event delegation - muito mais limpo
+            this.sectionElement.addEventListener('change', this.handleChange.bind(this));
+            this.sectionElement.addEventListener('input', this.handleInput.bind(this));
+            this.sectionElement.addEventListener('click', this.handleClick.bind(this));
+        }
+
+        handleChange(event) {
+            const { target } = event;
+
+            // Campos "Outro"
+            if (target.value === 'outro' && target.classList.contains('form-select')) {
+                this.toggleOtherField(target, true);
+            } else if (target.classList.contains('form-select') && target.value !== 'outro') {
+                this.toggleOtherField(target, false);
+            }
+
             // Checkboxes
-            this.setupCheckboxes();
-            
+            if (target.type === 'checkbox') {
+                this.updateCheckboxVisual(target);
+            }
+
+            this.notifyChange();
+        }
+
+        handleInput(event) {
+            const { target } = event;
+
+            // Validação de distância em tempo real
+            if (target.type === 'number' && target.id.includes('distancia')) {
+                const field = this.config.distanceFields.find(f => f.id === target.id);
+                if (field) {
+                    this.validateDistanceField(target, field.max);
+                }
+            }
+
+            // Debounce para outros inputs
+            clearTimeout(this.inputTimeout);
+            this.inputTimeout = setTimeout(() => {
+                this.notifyChange();
+            }, 300);
+        }
+
+        handleClick(event) {
+            // Click em checkbox-item
+            const checkboxItem = event.target.closest('.checkbox-item');
+            if (checkboxItem && event.target === checkboxItem) {
+                const checkbox = checkboxItem.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    this.updateCheckboxVisual(checkbox);
+                    this.notifyChange();
+                }
+            }
+
             // Navegação
-            this.setupNavigationListeners();
-            
-            // Inputs gerais
-            this.setupGeneralInputs();
-        }
-
-        setupOtherFields() {
-            INFRAESTRUTURA_CONFIG.dropdownFields.forEach(field => {
-                if (field.hasOther) {
-                    const selectElement = document.getElementById(field.id);
-                    const otherElement = document.getElementById(`${field.id}Outro`);
-
-                    if (selectElement && otherElement) {
-                        selectElement.addEventListener('change', () => {
-                            if (selectElement.value === 'outro') {
-                                otherElement.style.display = 'block';
-                                otherElement.focus();
-                                this.otherFields.set(field.id, true);
-                            } else {
-                                otherElement.style.display = 'none';
-                                otherElement.value = '';
-                                this.otherFields.set(field.id, false);
-                            }
-                            this.handleFieldChange();
-                        });
-
-                        otherElement.addEventListener('input', () => this.handleFieldChange());
-                    }
+            if (event.target.matches('.btn-prev')) {
+                FichaTecnica.showSection('automacao');
+            } else if (event.target.matches('.btn-next')) {
+                if (this.validateSection()) {
+                    FichaTecnica.showSection('observacoes');
                 }
-            });
-        }
-
-        setupDistanceFields() {
-            INFRAESTRUTURA_CONFIG.distanceFields.forEach(field => {
-                const element = document.getElementById(field.id);
-                if (element) {
-                    element.addEventListener('input', (e) => {
-                        this.validateDistanceField(e.target, field.max);
-                        this.handleFieldChange();
-                    });
-                    
-                    element.addEventListener('blur', (e) => {
-                        this.validateDistanceField(e.target, field.max);
-                    });
-                }
-            });
-        }
-
-        setupCheckboxes() {
-            // Protocolo de comunicação
-            INFRAESTRUTURA_CONFIG.protocolOptions.forEach(option => {
-                const checkbox = document.getElementById(option.id);
-                if (checkbox) {
-                    checkbox.addEventListener('change', () => {
-                        this.updateCheckboxVisuals(checkbox);
-                        this.handleFieldChange();
-                    });
-                    
-                    const checkboxItem = checkbox.closest('.checkbox-item');
-                    if (checkboxItem) {
-                        checkboxItem.addEventListener('click', (e) => {
-                            if (e.target === checkboxItem) {
-                                checkbox.checked = !checkbox.checked;
-                                this.updateCheckboxVisuals(checkbox);
-                                this.handleFieldChange();
-                            }
-                        });
-                    }
-                }
-            });
-
-            // Horário de trabalho
-            INFRAESTRUTURA_CONFIG.horarioOptions.forEach(option => {
-                const checkbox = document.getElementById(option.id);
-                if (checkbox) {
-                    checkbox.addEventListener('change', () => {
-                        this.updateCheckboxVisuals(checkbox);
-                        this.handleFieldChange();
-                    });
-                    
-                    const checkboxItem = checkbox.closest('.checkbox-item');
-                    if (checkboxItem) {
-                        checkboxItem.addEventListener('click', (e) => {
-                            if (e.target === checkboxItem) {
-                                checkbox.checked = !checkbox.checked;
-                                this.updateCheckboxVisuals(checkbox);
-                                this.handleFieldChange();
-                            }
-                        });
-                    }
-                }
-            });
-        }
-
-        setupGeneralInputs() {
-            const protocoloBase = document.getElementById('protocoloBase');
-            if (protocoloBase) {
-                protocoloBase.addEventListener('input', () => this.handleFieldChange());
             }
         }
 
-        setupNavigationListeners() {
-            const prevBtn = this.sectionElement.querySelector('.btn-prev');
-            const nextBtn = this.sectionElement.querySelector('.btn-next');
+        // ===========================================
+        // HELPERS SIMPLIFICADOS
+        // ===========================================
 
-            if (prevBtn) {
-                prevBtn.addEventListener('click', () => {
-                    if (window.FichaTecnica?.showSection) {
-                        window.FichaTecnica.showSection('automacao');
-                    }
-                });
+        toggleOtherField(selectElement, show) {
+            const otherField = document.getElementById(selectElement.id + 'Outro');
+            if (otherField) {
+                otherField.style.display = show ? 'block' : 'none';
+                if (show) {
+                    otherField.focus();
+                } else {
+                    otherField.value = '';
+                }
+                this.otherFields.set(selectElement.id, show);
             }
+        }
 
-            if (nextBtn) {
-                nextBtn.addEventListener('click', () => {
-                    if (this.validateSection()) {
-                        if (window.FichaTecnica?.showSection) {
-                            window.FichaTecnica.showSection('observacoes');
-                        }
-                    }
-                });
+        updateCheckboxVisual(checkbox) {
+            const checkboxItem = checkbox.closest('.checkbox-item');
+            if (checkboxItem) {
+                checkboxItem.classList.toggle('selected', checkbox.checked);
             }
         }
 
         validateDistanceField(field, maxValue) {
             const value = parseFloat(field.value);
             let isValid = true;
-            let errorMessage = '';
 
             field.classList.remove('error', 'warning');
 
             if (field.value && (isNaN(value) || value < 0)) {
                 isValid = false;
-                errorMessage = 'Valor deve ser um número positivo';
+                field.classList.add('error');
             } else if (value > maxValue) {
                 isValid = false;
-                errorMessage = `Distância máxima: ${maxValue}m`;
-            } else if (value > maxValue * 0.8) {
-                // Warning se próximo do limite
-                field.classList.add('warning');
-            }
-
-            if (!isValid) {
                 field.classList.add('error');
-                const errorElement = document.getElementById(`${field.id}-error`);
-                if (errorElement) {
-                    errorElement.textContent = errorMessage;
-                    errorElement.style.display = 'block';
-                }
-            } else {
-                const errorElement = document.getElementById(`${field.id}-error`);
-                if (errorElement) {
-                    errorElement.style.display = 'none';
-                }
+            } else if (value > maxValue * 0.8) {
+                field.classList.add('warning');
             }
 
             return isValid;
         }
 
-        updateCheckboxVisuals(checkbox) {
-            const checkboxItem = checkbox.closest('.checkbox-item');
-            if (checkboxItem) {
-                if (checkbox.checked) {
-                    checkboxItem.classList.add('selected');
-                } else {
-                    checkboxItem.classList.remove('selected');
-                }
+        notifyChange() {
+            if (window.FichaTecnica?.emit) {
+                FichaTecnica.emit('sectionChanged', { 
+                    section: this.config.name,
+                    data: this.collectData()
+                });
             }
         }
 
-        // ===========================
-        // API PARA O CORE
-        // ===========================
+        // ===========================================
+        // API OBRIGATÓRIA PARA O CORE
+        // ===========================================
 
         collectData() {
             const data = {};
 
             // Coletar dropdowns com campos "Outro"
-            INFRAESTRUTURA_CONFIG.dropdownFields.forEach(field => {
+            this.config.dropdownFields.forEach(field => {
                 const selectElement = document.getElementById(field.id);
-                const otherElement = document.getElementById(`${field.id}Outro`);
+                const otherElement = document.getElementById(field.id + 'Outro');
 
                 if (selectElement) {
-                    if (selectElement.value === 'outro' && otherElement && otherElement.value.trim()) {
+                    if (selectElement.value === 'outro' && otherElement?.value.trim()) {
                         data[field.id] = otherElement.value.trim();
                     } else {
                         data[field.id] = selectElement.value;
@@ -542,7 +443,7 @@
             });
 
             // Coletar distâncias
-            INFRAESTRUTURA_CONFIG.distanceFields.forEach(field => {
+            this.config.distanceFields.forEach(field => {
                 const element = document.getElementById(field.id);
                 if (element) {
                     data[field.id] = element.value.trim();
@@ -555,116 +456,99 @@
                 data.protocoloBase = protocoloBase.value.trim();
             }
 
-            // Coletar opções de protocolo
-            data.protocoloOpcoes = [];
-            INFRAESTRUTURA_CONFIG.protocolOptions.forEach(option => {
-                const checkbox = document.getElementById(option.id);
-                if (checkbox && checkbox.checked) {
-                    data.protocoloOpcoes.push(option.label);
-                }
-            });
-
-            // Coletar horários de trabalho
-            data.horarioTrabalho = [];
-            INFRAESTRUTURA_CONFIG.horarioOptions.forEach(option => {
-                const checkbox = document.getElementById(option.id);
-                if (checkbox && checkbox.checked) {
-                    data.horarioTrabalho.push(option.label);
-                }
-            });
+            // Coletar checkboxes - método unificado
+            data.protocoloOpcoes = this.collectCheckboxGroup('protocoloOpcoes');
+            data.horarioTrabalho = this.collectCheckboxGroup('horarioTrabalho');
 
             return data;
         }
 
+        collectCheckboxGroup(groupName) {
+            const values = [];
+            this.config.checkboxGroups[groupName].forEach(item => {
+                const [id, label] = item.split('|');
+                const checkbox = document.getElementById(id);
+                if (checkbox?.checked) {
+                    values.push(label);
+                }
+            });
+            return values;
+        }
+
         loadData() {
-            const data = window.FichaTecnica?.appData?.[MODULE_NAME];
+            const data = FichaTecnica?.state?.data?.[this.config.name];
             if (!data) return;
 
-            // Carregar dropdowns com "Outro"
-            INFRAESTRUTURA_CONFIG.dropdownFields.forEach(field => {
-                const selectElement = document.getElementById(field.id);
-                const otherElement = document.getElementById(`${field.id}Outro`);
-
-                if (selectElement && data[field.id]) {
-                    const standardValues = field.options.map(opt => opt.value).filter(val => val !== 'outro');
-                    
-                    if (standardValues.includes(data[field.id])) {
-                        selectElement.value = data[field.id];
-                    } else {
-                        selectElement.value = 'outro';
-                        if (otherElement) {
-                            otherElement.value = data[field.id];
-                            otherElement.style.display = 'block';
-                        }
-                    }
-                }
+            // Carregar dropdowns
+            this.config.dropdownFields.forEach(field => {
+                this.loadDropdownField(field, data[field.id]);
             });
 
             // Carregar distâncias
-            INFRAESTRUTURA_CONFIG.distanceFields.forEach(field => {
-                const element = document.getElementById(field.id);
-                if (element && data[field.id]) {
-                    element.value = data[field.id];
-                }
+            this.config.distanceFields.forEach(field => {
+                this.setFieldValue(field.id, data[field.id]);
             });
 
             // Carregar protocolo base
-            const protocoloBase = document.getElementById('protocoloBase');
-            if (protocoloBase && data.protocoloBase) {
-                protocoloBase.value = data.protocoloBase;
-            }
+            this.setFieldValue('protocoloBase', data.protocoloBase);
 
-            // Carregar opções de protocolo
-            if (data.protocoloOpcoes && Array.isArray(data.protocoloOpcoes)) {
-                data.protocoloOpcoes.forEach(opcao => {
-                    const option = INFRAESTRUTURA_CONFIG.protocolOptions.find(opt => opt.label === opcao);
-                    if (option) {
-                        const checkbox = document.getElementById(option.id);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                            this.updateCheckboxVisuals(checkbox);
-                        }
+            // Carregar checkboxes
+            this.loadCheckboxGroup('protocoloOpcoes', data.protocoloOpcoes);
+            this.loadCheckboxGroup('horarioTrabalho', data.horarioTrabalho);
+
+            console.log(`🗏️ Dados carregados para ${this.config.name}`);
+        }
+
+        loadDropdownField(field, value) {
+            if (!value) return;
+
+            const selectElement = document.getElementById(field.id);
+            if (!selectElement) return;
+
+            if (field.options.includes(value)) {
+                selectElement.value = value;
+            } else {
+                selectElement.value = 'outro';
+                this.toggleOtherField(selectElement, true);
+                const otherElement = document.getElementById(field.id + 'Outro');
+                if (otherElement) {
+                    otherElement.value = value;
+                }
+            }
+        }
+
+        loadCheckboxGroup(groupName, values) {
+            if (!values || !Array.isArray(values)) return;
+
+            values.forEach(value => {
+                const item = this.config.checkboxGroups[groupName].find(item => 
+                    item.split('|')[1] === value
+                );
+                if (item) {
+                    const [id] = item.split('|');
+                    const checkbox = document.getElementById(id);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        this.updateCheckboxVisual(checkbox);
                     }
-                });
-            }
+                }
+            });
+        }
 
-            // Carregar horários de trabalho
-            if (data.horarioTrabalho && Array.isArray(data.horarioTrabalho)) {
-                data.horarioTrabalho.forEach(horario => {
-                    const option = INFRAESTRUTURA_CONFIG.horarioOptions.find(opt => opt.label === horario);
-                    if (option) {
-                        const checkbox = document.getElementById(option.id);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                            this.updateCheckboxVisuals(checkbox);
-                        }
-                    }
-                });
+        setFieldValue(fieldId, value) {
+            const element = document.getElementById(fieldId);
+            if (element && value) {
+                element.value = value;
             }
-
-            console.log(`🏗️ Dados carregados para ${MODULE_NAME}`);
         }
 
         validateSection() {
             let isValid = true;
 
-            // Validar campos obrigatórios
-            INFRAESTRUTURA_CONFIG.dropdownFields.forEach(field => {
-                if (field.required) {
-                    const element = document.getElementById(field.id);
-                    if (!element || !element.value) {
-                        isValid = false;
-                        if (element) {
-                            element.classList.add('error');
-                        }
-                    }
-                }
-            });
-
             // Validar distâncias
-            INFRAESTRUTURA_CONFIG.distanceFields.forEach(field => {
+            this.config.distanceFields.forEach(field => {
                 const element = document.getElementById(field.id);
-                if (element && element.value) {
+                if (element?.value) {
                     if (!this.validateDistanceField(element, field.max)) {
                         isValid = false;
                     }
@@ -676,47 +560,51 @@
 
         generatePreview() {
             const data = this.collectData();
-            if (!data || !window.FichaTecnica?.hasSectionData(data)) {
-                return null;
-            }
+            if (!FichaTecnica?.hasSectionData?.(data)) return null;
 
             let html = `
                 <div class="preview-section">
-                    <h3>🏗️ Dados de Infraestrutura</h3>
+                    <h3>🗏️ Dados de Infraestrutura</h3>
                     <div class="preview-content-infra">
             `;
 
-            // Pontos de infraestrutura
-            const infraKeys = ['pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido', 'fixacaoPainel', 'fixacaoDispositivo'];
-            const hasInfraData = infraKeys.some(key => data[key]);
-            
-            if (hasInfraData) {
-                html += '<div class="preview-subsection"><h4>⚡ Infraestrutura</h4><div class="preview-grid">';
-                
-                const infraLabels = {
-                    pontoAlimentacao: 'Ponto de Alimentação',
-                    infraestruturaCabeamento: 'Cabeamento',
-                    pontoArComprimido: 'Ar Comprimido',
-                    fixacaoPainel: 'Fixação do Painel',
-                    fixacaoDispositivo: 'Fixação do Dispositivo'
-                };
-
-                infraKeys.forEach(key => {
-                    if (data[key]) {
-                        html += `<div><strong>${infraLabels[key]}:</strong> ${data[key]}</div>`;
+            // Preview organizado por seções
+            const sections = [
+                { 
+                    title: '⚡ Infraestrutura', 
+                    fields: ['pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido', 'fixacaoPainel', 'fixacaoDispositivo'],
+                    labels: {
+                        pontoAlimentacao: 'Ponto de Alimentação',
+                        infraestruturaCabeamento: 'Cabeamento',
+                        pontoArComprimido: 'Ar Comprimido',
+                        fixacaoPainel: 'Fixação do Painel',
+                        fixacaoDispositivo: 'Fixação do Dispositivo'
                     }
-                });
-                
-                html += '</div></div>';
-            }
+                },
+                {
+                    title: '📏 Distâncias',
+                    fields: ['distanciaEnergia', 'distanciaAr'],
+                    labels: {
+                        distanciaEnergia: 'Energia',
+                        distanciaAr: 'Ar Comprimido'
+                    },
+                    suffix: 'm'
+                }
+            ];
 
-            // Distâncias
-            if (data.distanciaEnergia || data.distanciaAr) {
-                html += '<div class="preview-subsection"><h4>📏 Distâncias</h4><div class="preview-grid">';
-                if (data.distanciaEnergia) html += `<div><strong>Energia:</strong> ${data.distanciaEnergia}m</div>`;
-                if (data.distanciaAr) html += `<div><strong>Ar Comprimido:</strong> ${data.distanciaAr}m</div>`;
-                html += '</div></div>';
-            }
+            sections.forEach(section => {
+                const hasData = section.fields.some(field => data[field]);
+                if (hasData) {
+                    html += `<div class="preview-subsection"><h4>${section.title}</h4><div class="preview-grid">`;
+                    section.fields.forEach(field => {
+                        if (data[field]) {
+                            const value = data[field] + (section.suffix || '');
+                            html += `<div><strong>${section.labels[field]}:</strong> ${value}</div>`;
+                        }
+                    });
+                    html += '</div></div>';
+                }
+            });
 
             // Protocolos
             if (data.protocoloBase || data.protocoloOpcoes?.length > 0) {
@@ -739,47 +627,11 @@
             return html;
         }
 
-        handleFieldChange() {
-            if (window.FichaTecnica?.emit) {
-                window.FichaTecnica.emit('sectionChanged', { 
-                    section: MODULE_NAME,
-                    data: this.collectData()
-                });
-            }
-        }
-
-        registerWithCore() {
-            if (window.FichaTecnica?.registerModule) {
-                window.FichaTecnica.registerModule({
-                    name: MODULE_NAME,
-                    instance: this,
-                    hasForm: true,
-                    hasPreview: true,
-                    hasValidation: true,
-                    isSimple: false,
-                    fields: ['pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido', 
-                            'fixacaoPainel', 'fixacaoDispositivo', 'distanciaEnergia', 'distanciaAr',
-                            'protocoloBase', 'protocoloOpcoes', 'horarioTrabalho'],
-                    defaultData: DEFAULT_DATA
-                });
-            }
-
-            if (window.FichaTecnica?.on) {
-                window.FichaTecnica.on('loadData', () => this.loadData());
-                window.FichaTecnica.on('clearData', () => this.clearData());
-            }
-        }
-
         clearData() {
-            // Limpar selects
-            INFRAESTRUTURA_CONFIG.dropdownFields.forEach(field => {
-                const selectElement = document.getElementById(field.id);
-                const otherElement = document.getElementById(`${field.id}Outro`);
-                
-                if (selectElement) {
-                    selectElement.value = '';
-                }
-                
+            // Limpar dropdowns
+            this.config.dropdownFields.forEach(field => {
+                this.setFieldValue(field.id, '');
+                const otherElement = document.getElementById(field.id + 'Outro');
                 if (otherElement) {
                     otherElement.value = '';
                     otherElement.style.display = 'none';
@@ -787,7 +639,7 @@
             });
 
             // Limpar distâncias
-            INFRAESTRUTURA_CONFIG.distanceFields.forEach(field => {
+            this.config.distanceFields.forEach(field => {
                 const element = document.getElementById(field.id);
                 if (element) {
                     element.value = '';
@@ -796,38 +648,54 @@
             });
 
             // Limpar protocolo base
-            const protocoloBase = document.getElementById('protocoloBase');
-            if (protocoloBase) {
-                protocoloBase.value = '';
-            }
+            this.setFieldValue('protocoloBase', '');
 
             // Limpar checkboxes
-            const allCheckboxes = [
-                ...INFRAESTRUTURA_CONFIG.protocolOptions,
-                ...INFRAESTRUTURA_CONFIG.horarioOptions
-            ];
-
-            allCheckboxes.forEach(option => {
-                const checkbox = document.getElementById(option.id);
+            Object.values(this.config.checkboxGroups).flat().forEach(item => {
+                const [id] = item.split('|');
+                const checkbox = document.getElementById(id);
                 if (checkbox) {
                     checkbox.checked = false;
-                    this.updateCheckboxVisuals(checkbox);
+                    this.updateCheckboxVisual(checkbox);
                 }
             });
 
-            // Resetar estado interno
             this.otherFields.clear();
+        }
+
+        // ===========================================
+        // REGISTRO NO CORE
+        // ===========================================
+
+        registerWithCore() {
+            if (window.FichaTecnica?.registerModule) {
+                FichaTecnica.registerModule({
+                    name: this.config.name,
+                    instance: this,
+                    hasForm: true,
+                    hasPreview: true,
+                    hasValidation: true,
+                    isSimple: false,
+                    fields: Object.keys(this.config.defaultData),
+                    defaultData: this.config.defaultData
+                });
+            }
+
+            if (window.FichaTecnica?.on) {
+                FichaTecnica.on('loadData', () => this.loadData());
+                FichaTecnica.on('clearData', () => this.clearData());
+            }
         }
     }
 
-    // ===========================
+    // ===========================================
     // AUTO-INICIALIZAÇÃO
-    // ===========================
+    // ===========================================
 
     function initModule() {
         const waitForCore = () => {
             if (window.FichaTecnica) {
-                const module = new InfraestruturalModule();
+                const module = new InfraestruturaModule();
                 module.init();
             } else {
                 setTimeout(waitForCore, 100);
