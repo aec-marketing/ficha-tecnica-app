@@ -4,51 +4,11 @@
  */
 
 // ===========================
-// CONFIGURAÇÕES E CONSTANTES
+// PDF_STYLEURAÇÕES E CONSTANTES
 // ===========================
 
-const CONFIG = {
-    page: {
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        width: 210,
-        height: 297
-    },
-    margins: {
-        top: 20,
-        bottom: 20,
-        left: 15,
-        right: 15
-    },
-    spacing: {
-        line: 6,
-        section: 8,
-        paragraph: 5
-    },
-    colors: {
-        primary: [37, 99, 235],
-        secondary: [100, 116, 139],
-        text: [30, 41, 59],
-        light: [148, 163, 184],
-        background: [248, 250, 252],
-        white: [255, 255, 255]
-    },
-    fonts: {
-        default: 'helvetica',
-        sizes: {
-            title: 18,
-            sectionTitle: 12,
-            subtitle: 10,
-            normal: 9,
-            small: 8
-        }
-    },
-    images: {
-        maxHeight: 60,
-        pixelToMm: 3.78
-    }
-};
+import { PDF_STYLE } from './pdfStyle.js';
+
 
 // Labels para campos
 const FIELD_LABELS = {
@@ -442,7 +402,7 @@ class DataCollector {
 class PDFRenderer {
     constructor(doc) {
         this.doc = doc;
-        this.currentY = CONFIG.margins.top;
+        this.currentY = PDF_STYLE.margins.top;
         this.resetStyles();
     }
 
@@ -450,20 +410,20 @@ class PDFRenderer {
      * Reseta estilos para padrão
      */
     resetStyles() {
-        this.doc.setFont(CONFIG.fonts.default, 'normal');
-        this.doc.setFontSize(CONFIG.fonts.sizes.normal);
-        this.doc.setTextColor(...CONFIG.colors.text);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.normal);
+        this.doc.setTextColor(...PDF_STYLE.colors.text);
     }
 
     /**
      * Verifica e adiciona quebra de página se necessário
      */
     checkPageBreak(requiredSpace = 10) {
-        const availableSpace = CONFIG.page.height - CONFIG.margins.bottom - this.currentY;
+        const availableSpace = PDF_STYLE.page.height - PDF_STYLE.margins.bottom - this.currentY;
         
         if (requiredSpace > availableSpace) {
             this.doc.addPage();
-            this.currentY = CONFIG.margins.top;
+            this.currentY = PDF_STYLE.margins.top;
             return true;
         }
         return false;
@@ -474,24 +434,24 @@ class PDFRenderer {
      */
     renderHeader() {
         // Background
-        this.doc.setFillColor(...CONFIG.colors.primary);
-        this.doc.rect(0, 0, CONFIG.page.width, 25, 'F');
+        this.doc.setFillColor(...PDF_STYLE.colors.primary);
+        this.doc.rect(0, 0, PDF_STYLE.page.width, 25, 'F');
 
         // Título
-        this.doc.setTextColor(...CONFIG.colors.white);
-        this.doc.setFontSize(CONFIG.fonts.sizes.title);
-        this.doc.setFont(CONFIG.fonts.default, 'bold');
-        this.doc.text('FICHA TÉCNICA DIGITAL', CONFIG.page.width / 2, 12, { align: 'center' });
+        this.doc.setTextColor(...PDF_STYLE.colors.white);
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.title);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+        this.doc.text('FICHA TÉCNICA DIGITAL', PDF_STYLE.page.width / 2, 12, { align: 'center' });
 
         // Subtítulo
-        this.doc.setFontSize(CONFIG.fonts.sizes.subtitle);
-        this.doc.setFont(CONFIG.fonts.default, 'normal');
-        this.doc.text('Sistema Profissional de Documentação Técnica', CONFIG.page.width / 2, 18, { align: 'center' });
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.subtitle);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+        this.doc.text('Sistema Profissional de Documentação Técnica', PDF_STYLE.page.width / 2, 18, { align: 'center' });
 
         // Linha decorativa
-        this.doc.setDrawColor(...CONFIG.colors.secondary);
+        this.doc.setDrawColor(...PDF_STYLE.colors.secondary);
         this.doc.setLineWidth(0.5);
-        this.doc.line(CONFIG.margins.left, 27, CONFIG.page.width - CONFIG.margins.right, 27);
+        this.doc.line(PDF_STYLE.margins.left, 27, PDF_STYLE.page.width - PDF_STYLE.margins.right, 27);
 
         this.currentY = 35;
     }
@@ -500,12 +460,12 @@ class PDFRenderer {
      * Renderiza informações principais
      */
     renderMainInfo(data) {
-        const boxWidth = CONFIG.page.width - CONFIG.margins.left - CONFIG.margins.right;
+        const boxWidth = PDF_STYLE.page.width - PDF_STYLE.margins.left - PDF_STYLE.margins.right;
         
         // Box principal
-        this.doc.setDrawColor(...CONFIG.colors.light);
-        this.doc.setFillColor(...CONFIG.colors.background);
-        this.doc.roundedRect(CONFIG.margins.left, this.currentY, boxWidth, 25, 2, 2, 'FD');
+        this.doc.setDrawColor(...PDF_STYLE.colors.light);
+        this.doc.setFillColor(...PDF_STYLE.colors.background);
+        this.doc.roundedRect(PDF_STYLE.margins.left, this.currentY, boxWidth, 25, 2, 2, 'FD');
 
         this.currentY += 5;
 
@@ -521,19 +481,19 @@ class PDFRenderer {
         info.forEach((item, i) => {
             const col = i % 2;
             const row = Math.floor(i / 2);
-            const x = CONFIG.margins.left + 5 + (col * colWidth);
-            const y = this.currentY + (row * CONFIG.spacing.line);
+            const x = PDF_STYLE.margins.left + 5 + (col * colWidth);
+            const y = this.currentY + (row * PDF_STYLE.spacing.line);
 
-            this.doc.setTextColor(...CONFIG.colors.text);
-            this.doc.setFontSize(CONFIG.fonts.sizes.normal);
-            this.doc.setFont(CONFIG.fonts.default, 'bold');
+            this.doc.setTextColor(...PDF_STYLE.colors.text);
+            this.doc.setFontSize(PDF_STYLE.fonts.sizes.normal);
+            this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
             this.doc.text(item.label, x, y);
             
-            this.doc.setFont(CONFIG.fonts.default, 'normal');
+            this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
             this.doc.text(item.value, x + 25, y);
         });
 
-        this.currentY += Math.ceil(info.length / 2) * CONFIG.spacing.line + 10;
+        this.currentY += Math.ceil(info.length / 2) * PDF_STYLE.spacing.line + 10;
     }
 
     /**
@@ -542,49 +502,62 @@ class PDFRenderer {
     renderSectionHeader(title) {
         this.checkPageBreak(15);
         
-        const width = CONFIG.page.width - CONFIG.margins.left - CONFIG.margins.right;
+        const width = PDF_STYLE.page.width - PDF_STYLE.margins.left - PDF_STYLE.margins.right;
         
         // Background
-        this.doc.setFillColor(...CONFIG.colors.background);
-        this.doc.rect(CONFIG.margins.left, this.currentY - 2, width, 8, 'F');
+        this.doc.setFillColor(...PDF_STYLE.colors.background);
+        this.doc.rect(PDF_STYLE.margins.left, this.currentY - 2, width, 8, 'F');
         
         // Título
-        this.doc.setTextColor(...CONFIG.colors.primary);
-        this.doc.setFontSize(CONFIG.fonts.sizes.sectionTitle);
-        this.doc.setFont(CONFIG.fonts.default, 'bold');
-        this.doc.text(title, CONFIG.margins.left + 2, this.currentY + 3);
+        this.doc.setTextColor(...PDF_STYLE.colors.primary);
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.sectionTitle);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+        this.doc.text(title, PDF_STYLE.margins.left + 2, this.currentY + 3);
         
         // Linha
-        this.doc.setDrawColor(...CONFIG.colors.primary);
+        this.doc.setDrawColor(...PDF_STYLE.colors.primary);
         this.doc.setLineWidth(1);
-        this.doc.line(CONFIG.margins.left, this.currentY + 6, CONFIG.page.width - CONFIG.margins.right, this.currentY + 6);
+        this.doc.line(PDF_STYLE.margins.left, this.currentY + 6, PDF_STYLE.page.width - PDF_STYLE.margins.right, this.currentY + 6);
         
-        this.currentY += CONFIG.spacing.section;
+        this.currentY += PDF_STYLE.spacing.section;
     }
 
     /**
      * Renderiza campo simples
      */
-    renderField(label, value, indent = 0) {
-        if (!value || value.toString().trim() === '') return;
-        
-        this.checkPageBreak(CONFIG.spacing.line);
-        
-        const x = CONFIG.margins.left + indent;
-        
-        // Label
-        this.doc.setTextColor(...CONFIG.colors.secondary);
-        this.doc.setFontSize(CONFIG.fonts.sizes.normal);
-        this.doc.setFont(CONFIG.fonts.default, 'bold');
-        this.doc.text(label + ':', x, this.currentY);
-        
-        // Value
-        this.doc.setTextColor(...CONFIG.colors.text);
-        this.doc.setFont(CONFIG.fonts.default, 'normal');
-        this.doc.text(value.toString(), x + 35, this.currentY);
-        
-        this.currentY += CONFIG.spacing.line;
+renderField(label, value, indent = 0) {
+    if (!value || value.toString().trim() === '') return;
+
+    this.checkPageBreak(PDF_STYLE.spacing.line);
+
+    const { field } = PDF_STYLE;
+    const x = PDF_STYLE.margins.left + indent;
+
+    // Label
+    this.doc.setTextColor(...field.label.color);
+    this.doc.setFontSize(field.label.size);
+    this.doc.setFont(PDF_STYLE.fonts.default, field.label.weight);
+    this.doc.text(label, x, this.currentY);
+
+    // Separador (|)
+    let valueX = x + field.label.width;
+    if (field.separator?.show) {
+        this.doc.setTextColor(...PDF_STYLE.colors.light);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+        this.doc.text(field.separator.char, valueX, this.currentY);
+
+        valueX += field.separator.spacing;
     }
+
+    // Valor
+    this.doc.setTextColor(...field.value.color);
+    this.doc.setFontSize(field.value.size);
+    this.doc.setFont(PDF_STYLE.fonts.default, field.value.weight);
+    this.doc.text(value.toString(), valueX, this.currentY);
+
+    this.currentY += field.spacing;
+}
+
 
     /**
      * Renderiza texto longo com quebra de linha
@@ -594,29 +567,29 @@ class PDFRenderer {
         
         this.checkPageBreak(20);
         
-        const x = CONFIG.margins.left + indent;
-        const maxWidth = CONFIG.page.width - CONFIG.margins.left - CONFIG.margins.right - indent;
+        const x = PDF_STYLE.margins.left + indent;
+        const maxWidth = PDF_STYLE.page.width - PDF_STYLE.margins.left - PDF_STYLE.margins.right - indent;
         
         // Label
-        this.doc.setTextColor(...CONFIG.colors.secondary);
-        this.doc.setFontSize(CONFIG.fonts.sizes.subtitle);
-        this.doc.setFont(CONFIG.fonts.default, 'bold');
+        this.doc.setTextColor(...PDF_STYLE.colors.secondary);
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.subtitle);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
         this.doc.text(label + ':', x, this.currentY);
-        this.currentY += CONFIG.spacing.line;
+        this.currentY += PDF_STYLE.spacing.line;
         
         // Text
-        this.doc.setTextColor(...CONFIG.colors.text);
-        this.doc.setFontSize(CONFIG.fonts.sizes.normal);
-        this.doc.setFont(CONFIG.fonts.default, 'normal');
+        this.doc.setTextColor(...PDF_STYLE.colors.text);
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.normal);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
         
         const lines = this.doc.splitTextToSize(text.trim(), maxWidth);
         lines.forEach(line => {
-            this.checkPageBreak(CONFIG.spacing.line);
+            this.checkPageBreak(PDF_STYLE.spacing.line);
             this.doc.text(line, x, this.currentY);
-            this.currentY += CONFIG.spacing.line;
+            this.currentY += PDF_STYLE.spacing.line;
         });
         
-        this.currentY += CONFIG.spacing.paragraph;
+        this.currentY += PDF_STYLE.spacing.paragraph;
     }
 
     /**
@@ -625,24 +598,24 @@ class PDFRenderer {
     renderList(title, items, indent = 0) {
         if (!items || items.length === 0) return;
         
-        this.checkPageBreak(15 + (items.length * CONFIG.spacing.line));
+        this.checkPageBreak(15 + (items.length * PDF_STYLE.spacing.line));
         
-        const x = CONFIG.margins.left + indent;
+        const x = PDF_STYLE.margins.left + indent;
         
         // Title
-        this.doc.setTextColor(...CONFIG.colors.secondary);
-        this.doc.setFontSize(CONFIG.fonts.sizes.subtitle);
-        this.doc.setFont(CONFIG.fonts.default, 'bold');
+        this.doc.setTextColor(...PDF_STYLE.colors.secondary);
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.subtitle);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
         this.doc.text(title + ':', x, this.currentY);
-        this.currentY += CONFIG.spacing.line;
+        this.currentY += PDF_STYLE.spacing.line;
         
         // Items
-        this.doc.setTextColor(...CONFIG.colors.text);
-        this.doc.setFontSize(CONFIG.fonts.sizes.normal);
-        this.doc.setFont(CONFIG.fonts.default, 'normal');
+        this.doc.setTextColor(...PDF_STYLE.colors.text);
+        this.doc.setFontSize(PDF_STYLE.fonts.sizes.normal);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
         
         items.forEach(item => {
-            this.checkPageBreak(CONFIG.spacing.line);
+            this.checkPageBreak(PDF_STYLE.spacing.line);
             
             if (typeof item === 'string') {
                 this.doc.text(`• ${item}`, x + 3, this.currentY);
@@ -653,33 +626,33 @@ class PDFRenderer {
                 
                 if (item.observation) {
                     this.currentY += 3;
-                    this.doc.setTextColor(...CONFIG.colors.light);
-                    this.doc.setFontSize(CONFIG.fonts.sizes.small);
+                    this.doc.setTextColor(...PDF_STYLE.colors.light);
+                    this.doc.setFontSize(PDF_STYLE.fonts.sizes.small);
                     this.doc.text(`  - ${item.observation}`, x + 6, this.currentY);
-                    this.doc.setTextColor(...CONFIG.colors.text);
-                    this.doc.setFontSize(CONFIG.fonts.sizes.normal);
+                    this.doc.setTextColor(...PDF_STYLE.colors.text);
+                    this.doc.setFontSize(PDF_STYLE.fonts.sizes.normal);
                 }
             }
             
-            this.currentY += CONFIG.spacing.line;
+            this.currentY += PDF_STYLE.spacing.line;
         });
         
-        this.currentY += CONFIG.spacing.paragraph;
+        this.currentY += PDF_STYLE.spacing.paragraph;
     }
 
     /**
      * Renderiza imagem
      */
     renderImage(image, index) {
-        const maxWidth = CONFIG.page.width - CONFIG.margins.left - CONFIG.margins.right - 20;
-        const maxHeight = CONFIG.images.maxHeight;
+        const maxWidth = PDF_STYLE.page.width - PDF_STYLE.margins.left - PDF_STYLE.margins.right - 20;
+        const maxHeight = PDF_STYLE.images.maxHeight;
         
         this.checkPageBreak(maxHeight + 15);
         
         try {
             // Calcular dimensões
-            let width = (image.width || 200) / CONFIG.images.pixelToMm;
-            let height = (image.height || 150) / CONFIG.images.pixelToMm;
+            let width = (image.width || 200) / PDF_STYLE.images.pixelToMm;
+            let height = (image.height || 150) / PDF_STYLE.images.pixelToMm;
             
             // Ajustar proporcionalmente
             if (width > maxWidth) {
@@ -693,15 +666,15 @@ class PDFRenderer {
             }
             
             // Adicionar imagem
-            this.doc.addImage(image.src, 'JPEG', CONFIG.margins.left + 10, this.currentY, width, height);
+            this.doc.addImage(image.src, 'JPEG', PDF_STYLE.margins.left + 10, this.currentY, width, height);
             this.currentY += height + 5;
             
             // Legenda
-            this.doc.setTextColor(...CONFIG.colors.light);
-            this.doc.setFontSize(CONFIG.fonts.sizes.small);
-            this.doc.setFont(CONFIG.fonts.default, 'italic');
-            this.doc.text(`Figura ${index}: ${image.name}`, CONFIG.margins.left + 10, this.currentY);
-            this.currentY += CONFIG.spacing.line + 5;
+            this.doc.setTextColor(...PDF_STYLE.colors.light);
+            this.doc.setFontSize(PDF_STYLE.fonts.sizes.small);
+            this.doc.setFont(PDF_STYLE.fonts.default, 'italic');
+            this.doc.text(`Figura ${index}: ${image.name}`, PDF_STYLE.margins.left + 10, this.currentY);
+            this.currentY += PDF_STYLE.spacing.line + 5;
             
         } catch (error) {
             console.warn(`⚠️ Erro ao renderizar imagem ${index}:`, error);
@@ -718,21 +691,21 @@ class PDFRenderer {
         for (let page = 1; page <= totalPages; page++) {
             this.doc.setPage(page);
             
-            const y = CONFIG.page.height - 15;
+            const y = PDF_STYLE.page.height - 15;
             
             // Linha
-            this.doc.setDrawColor(...CONFIG.colors.light);
+            this.doc.setDrawColor(...PDF_STYLE.colors.light);
             this.doc.setLineWidth(0.5);
-            this.doc.line(CONFIG.margins.left, y, CONFIG.page.width - CONFIG.margins.right, y);
+            this.doc.line(PDF_STYLE.margins.left, y, PDF_STYLE.page.width - PDF_STYLE.margins.right, y);
             
             // Textos
-            this.doc.setTextColor(...CONFIG.colors.light);
-            this.doc.setFontSize(CONFIG.fonts.sizes.small);
-            this.doc.setFont(CONFIG.fonts.default, 'normal');
+            this.doc.setTextColor(...PDF_STYLE.colors.light);
+            this.doc.setFontSize(PDF_STYLE.fonts.sizes.small);
+            this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
             
-            this.doc.text('Ficha Técnica Digital - Sistema Profissional', CONFIG.margins.left, y + 7);
-            this.doc.text(Utils.formatDate(), CONFIG.page.width / 2, y + 7, { align: 'center' });
-            this.doc.text(`Página ${page} de ${totalPages}`, CONFIG.page.width - CONFIG.margins.right, y + 7, { align: 'right' });
+            this.doc.text('Ficha Técnica Digital - Sistema Profissional', PDF_STYLE.margins.left, y + 7);
+            this.doc.text(Utils.formatDate(), PDF_STYLE.page.width / 2, y + 7, { align: 'center' });
+            this.doc.text(`Página ${page} de ${totalPages}`, PDF_STYLE.page.width - PDF_STYLE.margins.right, y + 7, { align: 'right' });
         }
     }
 }
@@ -830,7 +803,7 @@ class SectionRenderers {
         this.renderer.renderSectionHeader('Acionamentos de Automação');
         
         if (!Array.isArray(data) || data.length === 0) {
-            this.renderer.renderField('Status', 'Nenhum acionamento configurado');
+            this.renderer.renderField('Status', 'Nenhum acionamento PDF_STYLEurado');
             return;
         }
         
@@ -1099,9 +1072,9 @@ class PDFGenerator {
      */
     createDocument() {
         this.doc = new (window.jsPDF || window.jspdf.jsPDF)({
-            orientation: CONFIG.page.orientation,
-            unit: CONFIG.page.unit,
-            format: CONFIG.page.format
+            orientation: PDF_STYLE.page.orientation,
+            unit: PDF_STYLE.page.unit,
+            format: PDF_STYLE.page.format
         });
         
         this.renderer = new PDFRenderer(this.doc);
@@ -1497,7 +1470,7 @@ const styles = `
 }
 
 .preview-header {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #25eb77ff 0%, #d81d1dff 100%);
     color: white;
     padding: 20px;
     text-align: center;

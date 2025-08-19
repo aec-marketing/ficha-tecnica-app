@@ -45,9 +45,7 @@
                 </div>
                 
                 <div class="header-actions">
-                    <button class="btn btn-icon" id="themeToggle" title="Alternar tema">
-                        <i class="icon-theme"></i>
-                    </button>
+
                     <button class="btn btn-icon" id="fullscreenToggle" title="Tela cheia">
                         <i class="icon-fullscreen"></i>
                     </button>
@@ -449,11 +447,10 @@
 <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <!-- Sistema de PDF (tema + gerador) -->
-<script src="js/pdf/pdfThemeConfig.js"></script>
-<script src="js/pdf/pdfGenerator.js"></script>
+<script type="module" src="js/pdf/pdfGenerator.js"></script>
 
 <!-- Core refatorado -->
-<script src="js/cores/app.js" defer></script>
+<script type="module" src="js/cores/app.js" defer></script>
 
 <!-- Sistemas complementares -->
 <script src="js/cores/dataManager.js" defer></script>

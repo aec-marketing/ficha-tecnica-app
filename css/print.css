@@ -82,7 +82,7 @@
    =========================== */
 
 .doc-header {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #46eb25ff 0%, #d81dafff 100%);
     color: white;
     padding: 15px 20px;
     margin: -20px -20px 20px -20px;
@@ -97,7 +97,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #2563eb, #64748b, #2563eb);
+    background: linear-gradient(90deg, #eb2525ff, #64748b, #9feb25ff);
 }
 
 .doc-title {
@@ -156,7 +156,7 @@
 
 .doc-section-header {
     background: #f8fafc;
-    border-left: 4px solid #2563eb;
+    border-left: 4px solid #46eb25ff;
     padding: 8px 15px;
     margin-bottom: 15px;
 }
@@ -164,7 +164,7 @@
 .doc-section-title {
     font-size: 13pt;
     font-weight: bold;
-    color: #2563eb;
+    color: #2ceb25ff;
     margin: 0;
 }
 
