@@ -113,13 +113,18 @@ page1Layout: {
         height: 20,
         title: 'DADOS DO CONSULTOR'
     },
-    maquina: {
+    cliente: {
         y: 100,
-        height: 80,
-        title: 'ESPECIFICAÇÕES DA MÁQUINA'
+        height: 25,
+        title: 'DADOS DO CLIENTE'
     },
-    acionamentos: {
-        y: 185,
+maquina: {
+    y: 130,
+    height: 70,
+    title: 'ESPECIFICAÇÕES DA MÁQUINA'
+},
+acionamentos: {
+    y: 205,
         height: 60,
         title: 'ACIONAMENTOS DE AUTOMAÇÃO',
         maxLines: 2  // máximo 2 linhas por acionamento

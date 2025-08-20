@@ -85,16 +85,30 @@ class Utils {
     /**
      * Obtém valor de um campo do DOM
      */
-    static getValue(fieldId) {
-        const field = document.getElementById(fieldId);
-        if (!field) return '';
+static getValue(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return '';
+    
+    let value = field.value?.trim() || '';
+    
+    // Se o valor for "Outro", tentar buscar campo de texto adicional
+    if (value === 'Outro') {
+        const outroField = document.getElementById(fieldId + 'Outro') || 
+                          document.getElementById(fieldId + 'OutroTexto') ||
+                          document.getElementById(fieldId + '_outro');
         
-        const value = field.value?.trim() || '';
-        if (value) {
-            console.log(`📋 ${fieldId}: ${value}`);
+        if (outroField && outroField.value?.trim()) {
+            value = outroField.value.trim();
+            console.log(`📋 ${fieldId} (Outro): ${value}`);
+        } else {
+            console.log(`⚠️ Campo "Outro" selecionado mas texto não preenchido: ${fieldId}`);
         }
-        return value;
+    } else if (value) {
+        console.log(`📋 ${fieldId}: ${value}`);
     }
+    
+    return value;
+}
 
     /**
      * Obtém valor de checkbox
@@ -112,7 +126,44 @@ class Utils {
         console.log(`☑️ Checkbox marcado: ${fieldId} = ${label}`);
         return label;
     }
-
+/**
+ * Obtém valor de dropdown, tratando opção "Outro" automaticamente
+ */
+static getDropdownValue(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return '';
+    
+    let value = field.value?.trim() || '';
+    
+    // Se selecionou "Outro", buscar campo de texto
+    if (value === 'Outro') {
+        // Tentar diferentes padrões de ID para campo "Outro"
+        const possibleIds = [
+            fieldId + 'Outro',
+            fieldId + 'OutroTexto', 
+            fieldId + '_outro',
+            fieldId + 'Custom'
+        ];
+        
+        for (const id of possibleIds) {
+            const outroField = document.getElementById(id);
+            if (outroField && outroField.value?.trim()) {
+                const customValue = outroField.value.trim();
+                console.log(`📋 ${fieldId} (Outro personalizado): ${customValue}`);
+                return customValue;
+            }
+        }
+        
+        console.log(`⚠️ Dropdown "${fieldId}" com "Outro" selecionado mas sem texto customizado`);
+        return 'Outro (não especificado)';
+    }
+    
+    if (value) {
+        console.log(`📋 ${fieldId}: ${value}`);
+    }
+    
+    return value;
+}
     /**
      * Verifica se há dados válidos em um objeto
      */
@@ -230,10 +281,10 @@ class DataCollector {
             anoFabricacao: Utils.getValue('maquinaAnoFabricacao'),
             
             // Técnicos
-            tensaoEntrada: Utils.getValue('maquinaTensaoEntrada'),
+            tensaoEntrada: DataCollector.getTensaoEntradaValue(),
             fase: Utils.getValue('maquinaFase'),
             neutro: Utils.getValue('maquinaNeutro'),
-            tensaoComando: Utils.getValue('maquinaTensaoComando'),
+            tensaoComando: DataCollector.getTensaoComandoValue(),
             tipoControle: Utils.getValue('maquinaTipoControle'),
             tensaoAlimentacao: Utils.getValue('maquinaTensaoAlimentacao'),
             potenciaInstalada: Utils.getValue('maquinaPotenciaInstalada'),
@@ -251,6 +302,46 @@ class DataCollector {
         };
     }
 
+/**
+ * Obtém valor da tensão de comando, tratando "outro"
+ */
+static getTensaoComandoValue() {
+    const select = document.getElementById('maquinaTensaoComando');
+    if (!select) return '';
+    
+    const value = select.value.trim();
+    
+    if (value.toLowerCase() === 'outro') {
+        const outroField = document.getElementById('maquinaTensaoComandoOutro');
+        if (outroField && outroField.value.trim()) {
+            return outroField.value.trim();
+        } else {
+            return 'Outro (não especificado)';
+        }
+    }
+    
+    return value;
+}
+/**
+ * Obtém valor da tensão de entrada, tratando "outro"
+ */
+static getTensaoEntradaValue() {
+    const select = document.getElementById('maquinaTensaoEntrada');
+    if (!select) return '';
+    
+    const value = select.value.trim();
+    
+    if (value.toLowerCase() === 'outro') {
+        const outroField = document.getElementById('maquinaTensaoEntradaOutro');
+        if (outroField && outroField.value.trim()) {
+            return outroField.value.trim();
+        } else {
+            return 'Outro (não especificado)';
+        }
+    }
+    
+    return value;
+}
     /**
      * Coleta acionamentos dinâmicos
      */
@@ -324,21 +415,45 @@ class DataCollector {
     /**
      * Coleta dados de infraestrutura
      */
-    collectInfraestrutura() {
-        return {
-            pontoAlimentacao: Utils.getValue('pontoAlimentacao'),
-            infraestruturaCabeamento: Utils.getValue('infraestruturaCabeamento'),
-            pontoArComprimido: Utils.getValue('pontoArComprimido'),
-            fixacaoPainel: Utils.getValue('fixacaoPainel'),
-            fixacaoDispositivo: Utils.getValue('fixacaoDispositivo'),
-            distanciaEnergia: Utils.getValue('distanciaEnergia'),
-            distanciaAr: Utils.getValue('distanciaAr'),
-            protocoloBase: Utils.getValue('protocoloBase'),
-            protocoloAnalogico0_10v: Utils.getCheckboxValue('protocoloAnalogico0_10v'),
-            protocoloDigital: Utils.getCheckboxValue('protocoloDigital'),
-            horarioFinalSemana: Utils.getCheckboxValue('horarioFinalSemana')
-        };
-    }
+collectInfraestrutura() {
+    const data = {};
+    
+    // Campos que podem ter "Outro"
+    const dropdownFields = [
+        'pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido',
+        'fixacaoPainel', 'fixacaoDispositivo', 'protocoloBase'
+    ];
+    
+    dropdownFields.forEach(fieldId => {
+        const select = document.getElementById(fieldId);
+        if (select) {
+            const value = select.value.trim();
+            
+            if (value.toLowerCase() === 'outro') {
+                // Buscar campo de texto personalizado
+                const outroField = document.getElementById(fieldId + 'Outro');
+                if (outroField && outroField.value.trim()) {
+                    data[fieldId] = outroField.value.trim();
+                } else {
+                    data[fieldId] = 'Outro (não especificado)';
+                }
+            } else {
+                data[fieldId] = value;
+            }
+        } else {
+            data[fieldId] = '';
+        }
+    });
+    
+    // Campos restantes (normais)
+    data.distanciaEnergia = Utils.getValue('distanciaEnergia');
+    data.distanciaAr = Utils.getValue('distanciaAr');
+    data.protocoloAnalogico0_10v = Utils.getCheckboxValue('protocoloAnalogico0_10v');
+    data.protocoloDigital = Utils.getCheckboxValue('protocoloDigital');
+    data.horarioFinalSemana = Utils.getCheckboxValue('horarioFinalSemana');
+    
+    return data;
+}
 
     /**
      * Coleta observações e imagens
@@ -415,19 +530,19 @@ class PDFRenderer {
         this.doc.setTextColor(...PDF_STYLE.colors.text);
     }
 
-    /**
-     * Verifica e adiciona quebra de página se necessário
-     */
-    checkPageBreak(requiredSpace = 10) {
-        const availableSpace = PDF_STYLE.page.height - PDF_STYLE.margins.bottom - this.currentY;
-        
-        if (requiredSpace > availableSpace) {
-            this.doc.addPage();
-            this.currentY = PDF_STYLE.margins.top;
-            return true;
-        }
-        return false;
+/**
+ * Verifica e adiciona quebra de página se necessário
+ */
+checkPageBreak(requiredSpace = 10) {
+    const availableSpace = PDF_STYLE.page.height - PDF_STYLE.margins.bottom - this.currentY;
+    
+    if (requiredSpace > availableSpace) {
+        this.doc.addPage();
+        this.currentY = PDF_STYLE.margins.top;
+        return true;
     }
+    return false;
+}
 
     /**
      * Renderiza cabeçalho do documento
@@ -538,6 +653,9 @@ renderFixedSection(sectionType, data) {
         case 'consultor':
             this.renderConsultorCompact(data.consultor);
             break;
+        case 'cliente':
+            this.renderClienteCompact(data.cliente);
+            break;
         case 'maquina':
             this.renderMaquinaCompact(data.maquina);
             break;
@@ -550,57 +668,226 @@ renderFixedSection(sectionType, data) {
 /**
  * Renderiza resumo do projeto em 2 colunas
  */
+/**
+ * Renderiza resumo do projeto em 2 colunas otimizadas
+ */
 renderResumoContent(data) {
     const col = PDF_STYLE.columns.dual;
     
-    // Coluna esquerda
-const y = this.currentY;
-this.renderFieldInColumn('Máquina', data.maquina?.nome || 'N/A', col.left, y);
-this.renderFieldInColumn('Cliente', data.cliente?.nome || 'N/A', col.left, y + 7);
-this.renderFieldInColumn('Tipo', data.maquina?.tipoControle || 'N/A', col.right, y);
-this.currentY = y + 14;
+    // Linha 1: Máquina (coluna maior) + Tipo (coluna menor)
+    const y = this.currentY;
+    
+    // Máquina: usar 60% do espaço (100mm)
+    this.renderFieldInColumn('Máquina', data.maquina?.nome || 'N/A', {
+        x: col.left.x,
+        width: 100
+    }, y);
+    
+    // Tipo: usar 40% restante (70mm) 
+    const tipoDispositivo = this.formatTipoDispositivo(data.maquina || {});
+    this.renderFieldInColumn('Tipo', tipoDispositivo, {
+        x: col.left.x + 105,
+        width: 70
+    }, y);
+    
+    // Linha 2: Cliente (largura total)
+    this.renderFieldInColumn('Cliente', data.cliente?.nome || 'N/A', PDF_STYLE.columns.single, y + 7);
+    
+    this.currentY = y + 14;
 }
 
+/**
+ * Renderiza consultor de forma compacta
+ */
 /**
  * Renderiza consultor de forma compacta
  */
 renderConsultorCompact(data) {
     if (!data) data = {};
     
-    const col = PDF_STYLE.columns.dual;
-    this.renderFieldInColumn('Consultor Responsável', data.nome || 'N/A', col.left);
-    this.renderFieldInColumn('Contato', data.telefone || data.email || 'N/A', col.right);
+    const y = this.currentY;
+    
+    // Consultor: usar 65% do espaço (110mm) - prioridade para o nome
+    this.renderFieldInColumn('Consultor Responsável', data.nome || 'N/A', {
+        x: PDF_STYLE.columns.dual.left.x,
+        width: 110
+    }, y);
+    
+    // Contato: usar 35% restante (60mm)
+    const contato = data.telefone || data.email || 'N/A';
+    this.renderFieldInColumn('Contato', contato, {
+        x: PDF_STYLE.columns.dual.left.x + 115,
+        width: 60
+    }, y);
+    
+    this.currentY = y + 7;
 }
 
 /**
- * Renderiza máquina de forma compacta
+ * Renderiza cliente de forma compacta
  */
-renderMaquinaCompact(data) {
+renderClienteCompact(data) {
     if (!data) data = {};
     
     const col = PDF_STYLE.columns.dual;
     let y = this.currentY;
     
     // Linha 1
-    this.renderFieldInColumn('IDENTIFICAÇÃO', data.numeroSerie || 'N/A', col.left, y);
+    this.renderFieldInColumn('Empresa', data.nome || 'N/A', col.left, y);
+    this.renderFieldInColumn('Localização', data.cidade || 'N/A', col.right, y);
     y += 7;
     
     // Linha 2  
-    this.renderFieldInColumn('TIPO DE INTERVENÇÃO', data.tipoControle || 'N/A', col.left, y);
+    this.renderFieldInColumn('Responsável Técnico', data.contato || 'N/A', col.left, y);
+    this.renderFieldInColumn('Segmento', data.segmento || 'N/A', col.right, y);
     y += 7;
     
     // Linha 3
-    this.renderFieldInColumn('ALIMENTAÇÃO ELÉTRICA', data.tensaoEntrada || 'N/A', col.left, y);
-    this.renderFieldInColumn('Comando', data.tensaoComando || 'N/A', col.right, y);
-    y += 7;
-    
-    // Linha 4
-    this.renderFieldInColumn('PAINÉIS', data.painelAco ? 'Aço' : 'N/A', col.left, y);
-    this.renderFieldInColumn('Abordagem', data.abordagemAutomacao ? 'Automação' : 'N/A', col.right, y);
+    const operacao = this.formatOperacao(data);
+    this.renderFieldInColumn('Contato', data.telefone || data.email || 'N/A', col.left, y);
+    this.renderFieldInColumn('Operação', operacao, col.right, y);
     
     this.currentY = y + 7;
 }
 
+/**
+ * Formata operação (Turno + Horário)
+ */
+formatOperacao(data) {
+    const parts = [];
+    if (data.turnos) parts.push(data.turnos);
+    if (data.horario) parts.push(data.horario);
+    return parts.length > 0 ? parts.join(' | ') : 'N/A';
+}
+/**
+ * Formata Alimentação Elétrica (Tensão + Fase + Neutro)
+ */
+/**
+ * Formata Alimentação Elétrica (Tensão + Fase + Neutro)
+ */
+formatAlimentacaoEletrica(data) {
+    const parts = [];
+    
+    // Para tensão de entrada, verificar se é "outro" e buscar valor real
+    let tensaoEntrada = data.tensaoEntrada;
+    if (tensaoEntrada && tensaoEntrada.toLowerCase() === 'outro') {
+        const outroField = document.getElementById('maquinaTensaoEntradaOutro');
+        if (outroField && outroField.value.trim()) {
+            tensaoEntrada = outroField.value.trim();
+        } else {
+            tensaoEntrada = 'Outro (não especificado)';
+        }
+    }
+    
+    if (tensaoEntrada) parts.push(tensaoEntrada);
+    if (data.fase) parts.push(data.fase);
+    if (data.neutro) parts.push(data.neutro);
+    
+    return parts.length > 0 ? parts.join(' | ') : 'N/A';
+}
+
+/**
+ * Formata Comando (Tensão Comando + Tipo Controle)
+ */
+/**
+ * Formata Comando (Tensão Comando + Tipo Controle)
+ */
+formatComando(data) {
+    const parts = [];
+    
+    // Para tensão de comando, verificar se é "outro" e buscar valor real
+    let tensaoComando = data.tensaoComando;
+    if (tensaoComando && tensaoComando.toLowerCase() === 'outro') {
+        const outroField = document.getElementById('maquinaTensaoComandoOutro');
+        if (outroField && outroField.value.trim()) {
+            tensaoComando = outroField.value.trim();
+        } else {
+            tensaoComando = 'Outro (não especificado)';
+        }
+    }
+    
+    if (tensaoComando) parts.push(tensaoComando);
+    if (data.tipoControle) parts.push(data.tipoControle);
+    
+    return parts.length > 0 ? parts.join(' | ') : 'N/A';
+}
+/**
+ * Renderiza máquina de forma compacta
+ */
+/**
+ * Renderiza máquina de forma compacta
+ */
+renderMaquinaCompact(data) {
+    if (!data) data = {};
+    
+    let y = this.currentY;
+    
+    // Linha 1: IDENTIFICAÇÃO (largura total)
+    this.renderFieldInColumn('IDENTIFICAÇÃO', data.nome || 'N/A', PDF_STYLE.columns.single, y);
+    y += 7;
+    
+    // Linha 2: TIPO DE INTERVENÇÃO (largura total) 
+    const tipoIntervencao = this.formatTipoDispositivo(data);
+    this.renderFieldInColumn('TIPO DE INTERVENÇÃO', tipoIntervencao, PDF_STYLE.columns.single, y);
+    y += 7;
+    
+    // Linha 3: ALIMENTAÇÃO ELÉTRICA (65% espaço) + Comando (35% espaço)
+    const alimentacaoEletrica = this.formatAlimentacaoEletrica(data);
+    this.renderFieldInColumn('ALIMENTAÇÃO ELÉTRICA', alimentacaoEletrica, {
+        x: PDF_STYLE.columns.dual.left.x,
+        width: 115
+    }, y);
+    
+    const comando = this.formatComando(data);
+    this.renderFieldInColumn('Comando', comando, {
+        x: PDF_STYLE.columns.dual.left.x + 120,
+        width: 55
+    }, y);
+    y += 7;
+    
+    // Linha 4: PAINÉIS (50% espaço) + Abordagem (50% espaço)
+    const paineis = this.formatTipoPainel(data);
+    this.renderFieldInColumn('PAINÉIS', paineis, PDF_STYLE.columns.dual.left, y);
+    this.renderFieldInColumn('Abordagem', data.abordagemAutomacao ? 'Automação' : 'N/A', PDF_STYLE.columns.dual.right, y);
+    
+    this.currentY = y + 7;
+}
+/**
+ * Formata Tipo de Dispositivo da máquina
+ */
+formatTipoDispositivo(data) {
+    // Verificar se existe array tipoDispositivo
+    if (data.tipoDispositivo && Array.isArray(data.tipoDispositivo) && data.tipoDispositivo.length > 0) {
+        return data.tipoDispositivo.join(', ');
+    }
+    
+    // Fallback: verificar checkboxes individuais
+    const tipos = [];
+    if (data.tipoNovo) tipos.push('Novo');
+    if (data.retrofitCompleto) tipos.push('Retrofit Completo');
+    if (data.retrofitParcial) tipos.push('Retrofit Parcial');
+    
+    return tipos.length > 0 ? tipos.join(', ') : 'N/A';
+}
+
+/**
+ * Formata Tipo de Painel da máquina
+ */
+formatTipoPainel(data) {
+    // Verificar se existe array tipoPainel
+    if (data.tipoPainel && Array.isArray(data.tipoPainel) && data.tipoPainel.length > 0) {
+        return data.tipoPainel.join(', ');
+    }
+    
+    // Fallback: verificar checkboxes individuais
+    const tipos = [];
+    if (data.painelAco) tipos.push('Aço Carbono');
+    if (data.painelInox) tipos.push('Inox');
+    if (data.painelAluminio) tipos.push('Alumínio');
+    if (data.painelPlastico) tipos.push('Plástico');
+    
+    return tipos.length > 0 ? tipos.join(', ') : 'N/A';
+}
 /**
  * Renderiza acionamentos de forma compacta (máx 2 linhas)
  */
@@ -617,10 +904,19 @@ renderAcionamentosCompact(data) {
         const acionamento = data[i];
         const col = PDF_STYLE.columns.dual;
         
+        // Linha 1: Tipo e especificação técnica
         this.renderFieldInColumn(`Acionamento ${i + 1}`, acionamento.tipo || 'N/A', col.left);
-        this.renderFieldInColumn('Potência/Diâmetro', 
-            acionamento.potencia || acionamento.diametro || 'N/A', col.right);
-        this.currentY += 7;
+        const especTecnica = this.formatEspecificacaoTecnica(acionamento);
+        this.renderFieldInColumn('Especificação', especTecnica, col.right);
+        this.currentY += 5;
+        
+        // Linha 2: Descrição (se houver)
+        if (acionamento.descricao) {
+            this.renderFieldInColumn('Descrição', acionamento.descricao, PDF_STYLE.columns.single);
+            this.currentY += 2;
+        }
+        
+        this.currentY += 3; // Espaço entre acionamentos
     }
     
     // Se há mais acionamentos, mostrar contador
@@ -630,24 +926,52 @@ renderAcionamentosCompact(data) {
 }
 
 /**
- * Renderiza campo em coluna específica
+ * Formata especificação técnica do acionamento
  */
+formatEspecificacaoTecnica(acionamento) {
+    const specs = [];
+    
+    if (acionamento.tipo === 'Motor') {
+        if (acionamento.potencia) specs.push(`${acionamento.potencia}`);
+        if (acionamento.tipoMotor) specs.push(`${acionamento.tipoMotor}`);
+    } else if (acionamento.tipo === 'Hidráulico' || acionamento.tipo === 'Pneumático') {
+        if (acionamento.diametro) specs.push(`Ø ${acionamento.diametro}`);
+    }
+    
+    return specs.length > 0 ? specs.join(' | ') : 'Não informado';
+}
+
 renderFieldInColumn(label, value, column, customY = null) {
     const y = customY || this.currentY;
     
+    // Suportar tanto objetos de coluna quanto colunas customizadas
+    const col = column.x !== undefined ? column : column;
+    
     // Label
-this.doc.setTextColor(...PDF_STYLE.colors.secondary);
+    this.doc.setTextColor(...PDF_STYLE.colors.secondary);
     this.doc.setFontSize(9);
     this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
-    this.doc.text(label + ':', column.x, y);
+    this.doc.text(label + ':', col.x, y);
     
     // Valor
     if (value === 'N/A') {
-    this.doc.setTextColor(...PDF_STYLE.fieldDefaults.emptyColor);
-} else {
-    this.doc.setTextColor(...PDF_STYLE.colors.text);
-}    this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
-    this.doc.text(value, column.x + 40, y);
+        this.doc.setTextColor(...PDF_STYLE.fieldDefaults.emptyColor);
+    } else {
+        this.doc.setTextColor(...PDF_STYLE.colors.text);
+    }
+    this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+    
+    // Calcular posição do valor - espaçamento especial para labels longos
+    let labelWidth;
+    if (label.length > 15) {
+        // Labels longos como "ALIMENTAÇÃO ELÉTRICA" 
+        labelWidth = Math.min(55, (col.width || 85) * 0.5);
+    } else {
+        // Labels normais
+        labelWidth = Math.min(45, (col.width || 85) * 0.45);
+    }
+    
+    this.doc.text(value, col.x + labelWidth, y);
     
     if (!customY) this.currentY += 7;
 }
@@ -1314,7 +1638,8 @@ calculateTextHeight(text) {
  */
 renderImageSection(images) {
     // Verificar se cabe na página atual, senão quebrar
-    this.checkPageBreak(80);
+    const requiredSpace = images && images.length > 0 ? 120 : 80;
+    this.checkPageBreak(requiredSpace);
     
     // Cabeçalho da seção de imagens
     this.renderSectionTableHeader('📷 ÁREA PARA IMAGENS DO PROJETO', [230, 126, 34]); // laranja
@@ -1340,11 +1665,20 @@ renderImageSection(images) {
     let col = 0;
     let row = 0;
     
-    images.forEach((image, index) => {
-        if (index >= 4) return; // máximo 4 imagens
-        
-        const x = PDF_STYLE.margins.left + (col * (imageSize + spacing));
-        const y = this.currentY + (row * (imageSize + spacing));
+images.forEach((image, index) => {
+    if (index >= 4) return; // máximo 4 imagens
+    
+    // Verificar se a imagem cabe na página atual
+    const requiredHeight = imageSize + spacing + 15; // imagem + legenda + margem
+    if (this.currentY + (row * (imageSize + spacing)) + requiredHeight > PDF_STYLE.page.height - PDF_STYLE.margins.bottom) {
+        this.doc.addPage();
+        this.currentY = PDF_STYLE.margins.top;
+        row = 0;
+        col = 0;
+    }
+    
+    const x = PDF_STYLE.margins.left + (col * (imageSize + spacing));
+    const y = this.currentY + (row * (imageSize + spacing));
         
         try {
             // Calcular dimensões mantendo proporção
@@ -1485,28 +1819,37 @@ class SectionRenderers {
     /**
      * Renderiza seção de acionamentos
      */
-    renderAcionamentos(data) {
-        if (!Utils.hasData(data)) return;
+renderAcionamentos(data) {
+    if (!Utils.hasData(data)) return;
+    
+    this.renderer.renderSectionHeader('Acionamentos de Automação');
+    
+    if (!Array.isArray(data) || data.length === 0) {
+        this.renderer.renderField('Status', 'Nenhum acionamento configurado');
+        return;
+    }
+    
+    data.forEach((acionamento, index) => {
+        this.renderer.renderField(`Acionamento ${acionamento.index || index + 1}`, '', 0);
+        this.renderer.renderField('Tipo', acionamento.tipo, 5);
         
-        this.renderer.renderSectionHeader('Acionamentos de Automação');
-        
-        if (!Array.isArray(data) || data.length === 0) {
-            this.renderer.renderField('Status', 'Nenhum acionamento PDF_STYLEurado');
-            return;
+        // Renderizar campos específicos baseado no tipo
+        if (acionamento.tipo === 'Motor') {
+            this.renderer.renderField('Potência', acionamento.potencia || 'Não informado', 5);
+            this.renderer.renderField('Tipo de Motor', acionamento.tipoMotor || 'Não informado', 5);
+        } else if (acionamento.tipo === 'Hidráulico' || acionamento.tipo === 'Pneumático') {
+            this.renderer.renderField('Diâmetro', acionamento.diametro || 'Não informado', 5);
         }
         
-        data.forEach((acionamento, index) => {
-            this.renderer.renderField(`Acionamento ${acionamento.index || index + 1}`, '', 0);
-            this.renderer.renderField('Tipo', acionamento.tipo, 5);
-            this.renderer.renderField('Potência', acionamento.potencia, 5);
-            this.renderer.renderField('Tipo de Motor', acionamento.tipoMotor, 5);
-            this.renderer.renderField('Diâmetro', acionamento.diametro, 5);
-            
-            if (acionamento.descricao) {
-                this.renderer.renderLongText('Descrição', acionamento.descricao, 5);
-            }
-        });
-    }
+        // Sempre mostrar descrição se houver
+        if (acionamento.descricao) {
+            this.renderer.renderLongText('Descrição da Aplicação', acionamento.descricao, 5);
+        }
+        
+        // Espaço entre acionamentos
+        this.renderer.currentY += 3;
+    });
+}
 
     /**
      * Renderiza seção de segurança
@@ -1801,6 +2144,9 @@ renderPage1(data) {
     
     // DADOS DO CONSULTOR  
     this.renderer.renderFixedSection('consultor', data);
+    
+    // DADOS DO CLIENTE
+    this.renderer.renderFixedSection('cliente', data);
     
     // ESPECIFICAÇÕES DA MÁQUINA
     this.renderer.renderFixedSection('maquina', data);
