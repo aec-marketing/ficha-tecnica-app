@@ -495,6 +495,462 @@ class PDFRenderer {
 
         this.currentY += Math.ceil(info.length / 2) * PDF_STYLE.spacing.line + 10;
     }
+/**
+ * Renderiza título de página
+ */
+renderPageTitle(title) {
+    this.doc.setTextColor(...PDF_STYLE.colors.primary);
+    this.doc.setFontSize(PDF_STYLE.fonts.sizes.sectionTitle);
+    this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+    this.doc.text(title, PDF_STYLE.margins.left, this.currentY);
+    
+    // Linha decorativa
+    this.doc.setDrawColor(...PDF_STYLE.colors.primary);
+    this.doc.setLineWidth(1);
+    this.doc.line(PDF_STYLE.margins.left, this.currentY + 3, 
+                  PDF_STYLE.page.width - PDF_STYLE.margins.right, this.currentY + 3);
+    
+    this.currentY += 15;
+}
+
+/**
+ * Renderiza seção com posicionamento fixo
+ */
+renderFixedSection(sectionType, data) {
+    const layout = PDF_STYLE.page1Layout[sectionType];
+    if (!layout) return;
+    
+    // Posicionar na coordenada Y fixa
+    this.currentY = layout.y;
+    
+    // Renderizar título da seção
+    this.doc.setTextColor(...PDF_STYLE.colors.primary);
+    this.doc.setFontSize(PDF_STYLE.fonts.sizes.sectionTitle);
+    this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+    this.doc.text(layout.title, PDF_STYLE.margins.left, this.currentY);
+    this.currentY += 8;
+    
+    // Renderizar conteúdo específico
+    switch(sectionType) {
+        case 'resumo':
+            this.renderResumoContent(data);
+            break;
+        case 'consultor':
+            this.renderConsultorCompact(data.consultor);
+            break;
+        case 'maquina':
+            this.renderMaquinaCompact(data.maquina);
+            break;
+        case 'acionamentos':
+            this.renderAcionamentosCompact(data.acionamentos);
+            break;
+    }
+}
+
+/**
+ * Renderiza resumo do projeto em 2 colunas
+ */
+renderResumoContent(data) {
+    const col = PDF_STYLE.columns.dual;
+    
+    // Coluna esquerda
+const y = this.currentY;
+this.renderFieldInColumn('Máquina', data.maquina?.nome || 'N/A', col.left, y);
+this.renderFieldInColumn('Cliente', data.cliente?.nome || 'N/A', col.left, y + 7);
+this.renderFieldInColumn('Tipo', data.maquina?.tipoControle || 'N/A', col.right, y);
+this.currentY = y + 14;
+}
+
+/**
+ * Renderiza consultor de forma compacta
+ */
+renderConsultorCompact(data) {
+    if (!data) data = {};
+    
+    const col = PDF_STYLE.columns.dual;
+    this.renderFieldInColumn('Consultor Responsável', data.nome || 'N/A', col.left);
+    this.renderFieldInColumn('Contato', data.telefone || data.email || 'N/A', col.right);
+}
+
+/**
+ * Renderiza máquina de forma compacta
+ */
+renderMaquinaCompact(data) {
+    if (!data) data = {};
+    
+    const col = PDF_STYLE.columns.dual;
+    let y = this.currentY;
+    
+    // Linha 1
+    this.renderFieldInColumn('IDENTIFICAÇÃO', data.numeroSerie || 'N/A', col.left, y);
+    y += 7;
+    
+    // Linha 2  
+    this.renderFieldInColumn('TIPO DE INTERVENÇÃO', data.tipoControle || 'N/A', col.left, y);
+    y += 7;
+    
+    // Linha 3
+    this.renderFieldInColumn('ALIMENTAÇÃO ELÉTRICA', data.tensaoEntrada || 'N/A', col.left, y);
+    this.renderFieldInColumn('Comando', data.tensaoComando || 'N/A', col.right, y);
+    y += 7;
+    
+    // Linha 4
+    this.renderFieldInColumn('PAINÉIS', data.painelAco ? 'Aço' : 'N/A', col.left, y);
+    this.renderFieldInColumn('Abordagem', data.abordagemAutomacao ? 'Automação' : 'N/A', col.right, y);
+    
+    this.currentY = y + 7;
+}
+
+/**
+ * Renderiza acionamentos de forma compacta (máx 2 linhas)
+ */
+renderAcionamentosCompact(data) {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        this.renderFieldInColumn('Status', 'Nenhum acionamento configurado', PDF_STYLE.columns.single);
+        return;
+    }
+    
+    // Mostrar apenas os 2 primeiros acionamentos
+    const maxShow = Math.min(data.length, 2);
+    
+    for (let i = 0; i < maxShow; i++) {
+        const acionamento = data[i];
+        const col = PDF_STYLE.columns.dual;
+        
+        this.renderFieldInColumn(`Acionamento ${i + 1}`, acionamento.tipo || 'N/A', col.left);
+        this.renderFieldInColumn('Potência/Diâmetro', 
+            acionamento.potencia || acionamento.diametro || 'N/A', col.right);
+        this.currentY += 7;
+    }
+    
+    // Se há mais acionamentos, mostrar contador
+    if (data.length > 2) {
+        this.renderFieldInColumn('Total', `${data.length} acionamentos (ver página 2)`, PDF_STYLE.columns.single);
+    }
+}
+
+/**
+ * Renderiza campo em coluna específica
+ */
+renderFieldInColumn(label, value, column, customY = null) {
+    const y = customY || this.currentY;
+    
+    // Label
+this.doc.setTextColor(...PDF_STYLE.colors.secondary);
+    this.doc.setFontSize(9);
+    this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+    this.doc.text(label + ':', column.x, y);
+    
+    // Valor
+    if (value === 'N/A') {
+    this.doc.setTextColor(...PDF_STYLE.fieldDefaults.emptyColor);
+} else {
+    this.doc.setTextColor(...PDF_STYLE.colors.text);
+}    this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+    this.doc.text(value, column.x + 40, y);
+    
+    if (!customY) this.currentY += 7;
+}
+
+/**
+ * Renderiza tabela com bordas e células mescladas
+ */
+renderTable(data, config) {
+    const { x, y, width, height, rows, cols } = config;
+    const cellWidth = width / cols;
+    const cellHeight = height / rows;
+    
+    this.doc.setDrawColor(0, 0, 0);
+    this.doc.setLineWidth(0.5);
+    
+    // Preencher células e coletar informações de mesclagem
+    const mergedCells = new Set();
+    
+    data.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+            if (cell) {
+                const cellX = x + (colIndex * cellWidth);
+                const cellY = y + (rowIndex * cellHeight);
+                const currentCellWidth = cell.colspan ? (cellWidth * cell.colspan) : cellWidth;
+                
+                // Background se especificado
+                if (cell.background) {
+                    this.doc.setFillColor(...cell.background);
+                    this.doc.rect(cellX, cellY, currentCellWidth, cellHeight, 'F');
+                }
+                
+                // Texto
+                this.doc.setTextColor(...(cell.color || PDF_STYLE.colors.text));
+                this.doc.setFontSize(cell.size || 9);
+                this.doc.setFont(PDF_STYLE.fonts.default, cell.weight || 'normal');
+                
+                // Centralizar texto na célula (considerando colspan)
+                const textX = cellX + currentCellWidth / 2;
+                const textY = cellY + cellHeight / 2 + 1;
+                
+                this.doc.text(cell.text, textX, textY, { align: 'center' });
+                
+                // Marcar células mescladas
+                if (cell.colspan) {
+                    for (let i = 0; i < cell.colspan; i++) {
+                        mergedCells.add(`${rowIndex}-${colIndex + i}`);
+                    }
+                }
+            }
+        });
+    });
+    
+    // Desenhar bordas seletivamente
+    this.drawTableBorders(x, y, width, height, rows, cols, cellWidth, cellHeight, mergedCells, data);
+}
+
+/**
+ * Desenha bordas da tabela respeitando células mescladas
+ */
+drawTableBorders(x, y, width, height, rows, cols, cellWidth, cellHeight, mergedCells, data) {
+    // Borda externa sempre
+    this.doc.rect(x, y, width, height);
+    
+    // Linhas horizontais
+    for (let i = 1; i < rows; i++) {
+        const lineY = y + (i * cellHeight);
+        
+        // Verificar se precisa quebrar a linha por células mescladas
+        let currentX = x;
+        for (let j = 0; j < cols; j++) {
+            const cellKey = `${i-1}-${j}`;
+            const belowCellKey = `${i}-${j}`;
+            
+            // Se a célula acima ou abaixo está mesclada horizontalmente, pular
+            const skipLine = this.isCellInHorizontalMerge(i-1, j, data) || 
+                           this.isCellInHorizontalMerge(i, j, data);
+            
+            if (!skipLine) {
+                const lineX = x + (j * cellWidth);
+                this.doc.line(lineX, lineY, lineX + cellWidth, lineY);
+            }
+        }
+    }
+    
+    // Linhas verticais
+    for (let i = 1; i < cols; i++) {
+        const lineX = x + (i * cellWidth);
+        
+        // Desenhar linha vertical completa, exceto onde há células mescladas
+        for (let j = 0; j < rows; j++) {
+            const lineY1 = y + (j * cellHeight);
+            const lineY2 = y + ((j + 1) * cellHeight);
+            
+            // Verificar se a célula à esquerda está mesclada
+            const leftCell = data[j] && data[j][i-1];
+            const shouldSkip = leftCell && leftCell.colspan && leftCell.colspan > 1;
+            
+            if (!shouldSkip) {
+                this.doc.line(lineX, lineY1, lineX, lineY2);
+            }
+        }
+    }
+}
+
+/**
+ * Verifica se uma célula faz parte de uma mesclagem horizontal
+ */
+isCellInHorizontalMerge(rowIndex, colIndex, data) {
+    if (!data[rowIndex]) return false;
+    
+    // Verificar se esta célula ou uma anterior na mesma linha tem colspan
+    for (let i = 0; i <= colIndex; i++) {
+        const cell = data[rowIndex][i];
+        if (cell && cell.colspan) {
+            // Se a célula mesclada se estende até esta posição
+            if (i + cell.colspan > colIndex) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Renderiza seção de infraestrutura como tabela
+ */
+renderInfraestruturaTable(data) {
+    const startY = this.currentY;
+    
+    // Cabeçalho da seção
+    this.renderSectionTableHeader('DADOS DE INFRAESTRUTURA', PDF_STYLE.colors.primary);
+    
+    // Preparar dados da tabela
+    const tableData = [
+        [
+            { text: 'ALIMENTAÇÃO ELÉTRICA', background: [240, 240, 240], weight: 'bold', size: 8 },
+            { text: 'CABEAMENTO', background: [240, 240, 240], weight: 'bold', size: 8 }
+        ],
+        [
+            { text: data?.pontoAlimentacao || 'N/A', size: 8 },
+            { text: data?.infraestruturaCabeamento || 'N/A', size: 8 }
+        ],
+        [
+            { text: 'AR COMPRIMIDO', background: [240, 240, 240], weight: 'bold', size: 8 },
+            { text: 'FIXAÇÃO PAINEL', background: [240, 240, 240], weight: 'bold', size: 8 }
+        ],
+        [
+            { text: data?.pontoArComprimido || 'N/A', size: 8 },
+            { text: data?.fixacaoPainel || 'N/A', size: 8 }
+        ],
+        [
+            { text: 'FIXAÇÃO DISPOSITIVOS', background: [240, 240, 240], weight: 'bold', size: 8 },
+            { text: 'DISTÂNCIAS', background: [240, 240, 240], weight: 'bold', size: 8 }
+        ],
+        [
+            { text: data?.fixacaoDispositivo || 'N/A', size: 8 },
+            { text: this.formatDistancias(data), size: 8 }
+        ],
+        [
+            { text: 'PROTOCOLOS DE COMUNICAÇÃO', background: [240, 240, 240], weight: 'bold', size: 8, colspan: 2 },
+            null
+        ],
+        [
+            { text: this.formatProtocolos(data), size: 8, colspan: 2 },
+            null
+        ],
+        [
+            { text: 'HORÁRIOS DE TRABALHO', background: [240, 240, 240], weight: 'bold', size: 8, colspan: 2 },
+            null
+        ],
+        [
+            { text: data?.horarioFinalSemana ? 'Inclui Final de Semana' : 'Comercial', size: 8, colspan: 2 },
+            null
+        ]
+    ];
+    
+    // Renderizar tabela
+    this.renderTable(tableData, {
+        x: PDF_STYLE.margins.left,
+        y: this.currentY,
+        width: 174, // largura total disponível
+        height: 60, // altura da tabela
+        rows: 10,
+        cols: 2
+    });
+    
+    this.currentY += 70;
+}
+
+/**
+ * Renderiza cabeçalho de seção com tabela
+ */
+renderSectionTableHeader(title, color) {
+    const width = PDF_STYLE.page.width - PDF_STYLE.margins.left - PDF_STYLE.margins.right;
+    
+    // Background colorido
+    this.doc.setFillColor(...color);
+    this.doc.rect(PDF_STYLE.margins.left, this.currentY, width, 8, 'F');
+    
+    // Texto branco
+    this.doc.setTextColor(255, 255, 255);
+    this.doc.setFontSize(10);
+    this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+    this.doc.text(title, PDF_STYLE.page.width / 2, this.currentY + 5, { align: 'center' });
+    
+    this.currentY += 12;
+}
+
+/**
+ * Formata distâncias para exibição
+ */
+formatDistancias(data) {
+    const dist = [];
+    if (data?.distanciaEnergia) dist.push(`Energia: ${data.distanciaEnergia}m`);
+    if (data?.distanciaAr) dist.push(`Ar: ${data.distanciaAr}m`);
+    return dist.length > 0 ? dist.join(' | ') : 'N/A';
+}
+
+/**
+ * Formata protocolos para exibição
+ */
+formatProtocolos(data) {
+    const protocolos = [];
+    if (data?.protocoloBase) protocolos.push(data.protocoloBase);
+    if (data?.protocoloAnalogico0_10v) protocolos.push('Analógico 0-10V');
+    if (data?.protocoloDigital) protocolos.push('Digital');
+    return protocolos.length > 0 ? protocolos.join(', ') : 'Não especificado';
+}
+
+/**
+ * Renderiza dispositivos como tabela dinâmica
+ */
+renderDevicesTable(devices, title, headerColor) {
+    if (!devices || Object.keys(devices).length === 0) return;
+    
+    // Filtrar apenas dispositivos selecionados
+    const selectedDevices = this.getSelectedDevices(devices);
+    if (selectedDevices.length === 0) return;
+    
+    // Cabeçalho da seção
+    this.renderSectionTableHeader(title, headerColor);
+    
+    // Cabeçalho da tabela
+    const tableData = [
+        [
+            { text: 'DISPOSITIVO', background: [34, 197, 94], color: [255, 255, 255], weight: 'bold', size: 8 },
+            { text: 'QTD', background: [34, 197, 94], color: [255, 255, 255], weight: 'bold', size: 8 },
+            { text: 'OBSERVAÇÃO', background: [34, 197, 94], color: [255, 255, 255], weight: 'bold', size: 8 }
+        ]
+    ];
+    
+    // Adicionar dispositivos selecionados
+    selectedDevices.forEach(device => {
+        tableData.push([
+            { text: device.name, size: 8 },
+            { text: device.quantity, size: 8 },
+            { text: device.observation || '-', size: 8 }
+        ]);
+    });
+    
+    // Renderizar tabela
+    const tableHeight = (tableData.length * 6) + 2;
+    this.renderTable(tableData, {
+        x: PDF_STYLE.margins.left,
+        y: this.currentY,
+        width: 174,
+        height: tableHeight,
+        rows: tableData.length,
+        cols: 3
+    });
+    
+    this.currentY += tableHeight + 10;
+}
+
+/**
+ * Extrai dispositivos selecionados
+ */
+getSelectedDevices(devices) {
+    const selected = [];
+    
+    Object.entries(devices).forEach(([key, value]) => {
+        if (value?.selected) {
+            const name = DEVICE_NAMES[key] || this.formatDeviceName(key);
+            selected.push({
+                name: name,
+                quantity: value.quantidade || '1',
+                observation: value.observacao || ''
+            });
+        }
+    });
+    
+    return selected;
+}
+
+/**
+ * Formata nome de dispositivo
+ */
+formatDeviceName(key) {
+    return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
+}
 
     /**
      * Renderiza cabeçalho de seção
@@ -708,6 +1164,238 @@ renderField(label, value, indent = 0) {
             this.doc.text(`Página ${page} de ${totalPages}`, PDF_STYLE.page.width - PDF_STYLE.margins.right, y + 7, { align: 'right' });
         }
     }
+/**
+ * Renderiza página 3 - Observações e Documentação
+ */
+renderPage3Content(data) {
+    // Cabeçalho da página
+    this.renderSectionTableHeader('📝 OBSERVAÇÕES FINAIS', PDF_STYLE.colors.primary);
+    
+    // Seções de texto com barras coloridas
+    this.renderObservationSection('🔧 CONSIDERAÇÕES TÉCNICAS', 
+        data.observacoes?.consideracoesTecnicas, [52, 152, 219]); // azul claro
+    
+    this.renderObservationSection('📅 CRONOGRAMA E PRAZOS', 
+        data.observacoes?.cronogramaPrazos, [46, 204, 113]); // verde
+    
+    this.renderObservationSection('⚠️ REQUISITOS ESPECIAIS', 
+        data.observacoes?.requisitosEspeciais, [155, 89, 182]); // roxo
+    
+    this.renderObservationSection('📄 DOCUMENTOS NECESSÁRIOS', 
+        data.observacoes?.documentosNecessarios, [52, 73, 94]); // azul escuro
+    
+    // Área de imagens
+    if (data.observacoes?.imagens?.length > 0) {
+        this.renderImageSection(data.observacoes.imagens);
+    }
+}
+
+/**
+ * Renderiza seção de observação com barra lateral colorida (dinâmica)
+ */
+renderObservationSection(title, content, barColor) {
+    if (!content || content.trim() === '') {
+        content = 'Não informado';
+    }
+    
+    // Verificar se precisa de nova página para o título
+    this.checkPageBreak(20);
+    
+    const startY = this.currentY;
+    const maxWidth = 160;
+    const lines = this.doc.splitTextToSize(content, maxWidth);
+    const contentHeight = lines.length * 5; // 5mm por linha
+    const minHeight = 25;
+    const titleHeight = 15;
+    
+    // Calcular altura total da seção
+    const totalSectionHeight = titleHeight + Math.max(minHeight - titleHeight, contentHeight);
+    
+    // Se a seção inteira não cabe, quebrar página
+    if (this.currentY + totalSectionHeight > PDF_STYLE.page.height - PDF_STYLE.margins.bottom) {
+        this.doc.addPage();
+        this.currentY = PDF_STYLE.margins.top;
+    }
+    
+    const finalStartY = this.currentY;
+    
+    // Background cinza claro para área do título
+    this.doc.setFillColor(248, 249, 250);
+    this.doc.rect(PDF_STYLE.margins.left, finalStartY, 174, titleHeight, 'F');
+    
+    // Barra lateral colorida para título
+    this.doc.setFillColor(...barColor);
+    this.doc.rect(PDF_STYLE.margins.left, finalStartY, 3, titleHeight, 'F');
+    
+    // Título da seção
+    this.doc.setTextColor(...PDF_STYLE.colors.primary);
+    this.doc.setFontSize(10);
+    this.doc.setFont(PDF_STYLE.fonts.default, 'bold');
+    this.doc.text(title, PDF_STYLE.margins.left + 8, finalStartY + 8);
+    
+    this.currentY = finalStartY + titleHeight;
+    
+    // Renderizar conteúdo com quebra de página dinâmica
+    this.renderTextWithDynamicBreak(content, maxWidth, barColor);
+    
+    this.currentY += 8; // espaço após a seção
+}
+
+/**
+ * Renderiza texto com quebra de página dinâmica e barra lateral
+ */
+renderTextWithDynamicBreak(content, maxWidth, barColor) {
+    const lines = this.doc.splitTextToSize(content, maxWidth);
+    const lineHeight = 5;
+    const sectionStartY = this.currentY;
+    
+    // Configurar texto
+    this.doc.setTextColor(...PDF_STYLE.colors.text);
+    this.doc.setFontSize(9);
+    this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+    
+    lines.forEach((line, index) => {
+        // Verificar se precisa quebrar página
+        if (this.currentY + lineHeight > PDF_STYLE.page.height - PDF_STYLE.margins.bottom) {
+            this.doc.addPage();
+            this.currentY = PDF_STYLE.margins.top;
+        }
+        
+        // Se é primeira linha após quebra de página, desenhar background e barra
+        const isFirstLineInPage = this.currentY === PDF_STYLE.margins.top;
+        const isFirstLine = index === 0;
+        
+        if (isFirstLineInPage || isFirstLine) {
+            // Calcular quantas linhas cabem nesta página
+            const remainingLines = lines.slice(index);
+            const availableSpace = PDF_STYLE.page.height - PDF_STYLE.margins.bottom - this.currentY;
+            const maxLinesInPage = Math.floor(availableSpace / lineHeight);
+            const linesInThisPage = Math.min(remainingLines.length, maxLinesInPage);
+            const backgroundHeight = Math.max(10, linesInThisPage * lineHeight + 5);
+            
+            // Background cinza claro
+            this.doc.setFillColor(248, 249, 250);
+            this.doc.rect(PDF_STYLE.margins.left, this.currentY - 2, 174, backgroundHeight, 'F');
+            
+            // Barra lateral colorida
+            this.doc.setFillColor(...barColor);
+            this.doc.rect(PDF_STYLE.margins.left, this.currentY - 2, 3, backgroundHeight, 'F');
+            
+            // Reconfigurar texto após desenhar background
+            this.doc.setTextColor(...PDF_STYLE.colors.text);
+            this.doc.setFontSize(9);
+            this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+        }
+        
+        // Renderizar linha
+        this.doc.text(line, PDF_STYLE.margins.left + 8, this.currentY + 3);
+        this.currentY += lineHeight;
+    });
+    
+    // Garantir espaço mínimo após o texto
+    if (this.currentY - sectionStartY < 10) {
+        this.currentY = sectionStartY + 10;
+    }
+}
+
+/**
+ * Calcula altura necessária para o texto
+ */
+calculateTextHeight(text) {
+    if (!text) return 0;
+    
+    const maxWidth = 160;
+    const lines = this.doc.splitTextToSize(text, maxWidth);
+    return lines.length * 5; // 5mm por linha
+}
+
+/**
+ * Renderiza seção de imagens
+ */
+renderImageSection(images) {
+    // Verificar se cabe na página atual, senão quebrar
+    this.checkPageBreak(80);
+    
+    // Cabeçalho da seção de imagens
+    this.renderSectionTableHeader('📷 ÁREA PARA IMAGENS DO PROJETO', [230, 126, 34]); // laranja
+    
+    if (!images || images.length === 0) {
+        // Área vazia para imagens
+        this.doc.setFillColor(253, 237, 236);
+        this.doc.rect(PDF_STYLE.margins.left, this.currentY, 174, 60, 'F');
+        
+        this.doc.setTextColor(156, 163, 175);
+        this.doc.setFontSize(12);
+        this.doc.setFont(PDF_STYLE.fonts.default, 'italic');
+        this.doc.text('Espaço reservado para imagens do projeto', 
+            PDF_STYLE.page.width / 2, this.currentY + 35, { align: 'center' });
+        
+        this.currentY += 70;
+        return;
+    }
+    
+    // Renderizar imagens em grid 2x2
+    const imageSize = 80; // tamanho de cada imagem
+    const spacing = 10;
+    let col = 0;
+    let row = 0;
+    
+    images.forEach((image, index) => {
+        if (index >= 4) return; // máximo 4 imagens
+        
+        const x = PDF_STYLE.margins.left + (col * (imageSize + spacing));
+        const y = this.currentY + (row * (imageSize + spacing));
+        
+        try {
+            // Calcular dimensões mantendo proporção
+            let width = imageSize;
+            let height = imageSize;
+            
+            if (image.width && image.height) {
+                const ratio = image.width / image.height;
+                if (ratio > 1) {
+                    height = imageSize / ratio;
+                } else {
+                    width = imageSize * ratio;
+                }
+            }
+            
+            // Centralizar imagem na célula
+            const imgX = x + (imageSize - width) / 2;
+            const imgY = y + (imageSize - height) / 2;
+            
+            this.doc.addImage(image.src, 'JPEG', imgX, imgY, width, height);
+            
+            // Legenda
+            this.doc.setTextColor(100, 116, 139);
+            this.doc.setFontSize(7);
+            this.doc.setFont(PDF_STYLE.fonts.default, 'normal');
+            this.doc.text(image.name || `Imagem ${index + 1}`, 
+                x + imageSize / 2, y + imageSize + 5, { align: 'center' });
+            
+        } catch (error) {
+            console.warn(`Erro ao renderizar imagem ${index + 1}:`, error);
+            
+            // Placeholder para imagem com erro
+            this.doc.setDrawColor(200, 200, 200);
+            this.doc.setFillColor(250, 250, 250);
+            this.doc.rect(x, y, imageSize, imageSize, 'FD');
+            
+            this.doc.setTextColor(150, 150, 150);
+            this.doc.setFontSize(8);
+            this.doc.text('Erro ao carregar', x + imageSize / 2, y + imageSize / 2, { align: 'center' });
+        }
+        
+        col++;
+        if (col >= 2) {
+            col = 0;
+            row++;
+        }
+    });
+    
+    this.currentY += ((Math.ceil(images.length / 2)) * (imageSize + spacing)) + 20;
+}
+
 }
 
 // ===========================
@@ -1084,34 +1772,78 @@ class PDFGenerator {
     /**
      * Renderiza todo o conteúdo do PDF
      */
-    renderContent(data) {
-        // Cabeçalho
-        this.renderer.renderHeader();
-        
-        // Informações principais
-        this.renderer.renderMainInfo(data);
-        
-        // Seções
-        const sections = [
-            { key: 'consultor', method: 'renderConsultor' },
-            { key: 'cliente', method: 'renderCliente' },
-            { key: 'maquina', method: 'renderMaquina' },
-            { key: 'acionamentos', method: 'renderAcionamentos' },
-            { key: 'seguranca', method: 'renderSeguranca' },
-            { key: 'automacao', method: 'renderAutomacao' },
-            { key: 'infraestrutura', method: 'renderInfraestrutura' },
-            { key: 'observacoes', method: 'renderObservacoes' }
-        ];
-        
-        sections.forEach(section => {
-            if (Utils.hasData(data[section.key])) {
-                this.sectionRenderers[section.method](data[section.key]);
-            }
-        });
-        
-        // Rodapé
-        this.renderer.renderFooter();
+renderContent(data) {
+    // PÁGINA 1 - Resumo Executivo
+    this.renderPage1(data);
+    
+    // PÁGINA 2 - Sistemas e Infraestrutura 
+    this.renderPage2(data);
+    
+    // PÁGINA 3 - Documentação (se necessário)
+    if (Utils.hasData(data.observacoes)) {
+        this.renderPage3(data);
     }
+    
+    // Rodapé em todas as páginas
+    this.renderer.renderFooter();
+}
+
+
+/**
+ * Renderiza Página 1 - Resumo Executivo
+ */
+renderPage1(data) {
+    // Cabeçalho
+    this.renderer.renderHeader();
+    
+    // RESUMO DO PROJETO
+    this.renderer.renderFixedSection('resumo', data);
+    
+    // DADOS DO CONSULTOR  
+    this.renderer.renderFixedSection('consultor', data);
+    
+    // ESPECIFICAÇÕES DA MÁQUINA
+    this.renderer.renderFixedSection('maquina', data);
+    
+    // ACIONAMENTOS DE AUTOMAÇÃO
+    this.renderer.renderFixedSection('acionamentos', data);
+}
+
+/**
+ * Renderiza Página 2 - Sistemas e Infraestrutura
+ */
+renderPage2(data) {
+    this.doc.addPage();
+    this.renderer.currentY = PDF_STYLE.margins.top + 10;
+    
+    // 1. DADOS DE INFRAESTRUTURA (tabela)
+    this.renderer.renderInfraestruturaTable(data.infraestrutura);
+    
+    // 2. DISPOSITIVOS DE SEGURANÇA (tabela dinâmica)
+    this.renderer.renderDevicesTable(
+        data.seguranca, 
+        '🛡️ DISPOSITIVOS DE SEGURANÇA', 
+        PDF_STYLE.colors.primary
+    );
+    
+    // 3. DISPOSITIVOS DE AUTOMAÇÃO (tabela dinâmica)
+    this.renderer.renderDevicesTable(
+        data.automacao, 
+        '🤖 DISPOSITIVOS DE AUTOMAÇÃO', 
+        PDF_STYLE.colors.primary
+    );
+}
+
+/**
+ * Renderiza Página 3 - Documentação
+ */
+renderPage3(data) {
+    this.doc.addPage();
+    this.renderer.currentY = PDF_STYLE.margins.top + 10;
+    
+    // Renderizar conteúdo da página 3
+    this.renderer.renderPage3Content(data);
+}
 }
 
 // ===========================

@@ -59,5 +59,90 @@ field: {
         weight: 'normal'
     },
     spacing: 8 // altura entre linhas
+},
+pageLayouts: {
+    page1: {
+        sections: ['resumo', 'consultor', 'maquina', 'acionamentos'],
+        layout: 'executive-summary',
+        title: 'Resumo Executivo'
+    },
+    page2: {
+        sections: ['infraestrutura', 'seguranca', 'automacao'], 
+        layout: 'systems-overview',
+        title: 'Sistemas e Infraestrutura'
+    },
+    page3: {
+        sections: ['observacoes'],
+        layout: 'documentation',
+        title: 'Documentação e Observações'
+    }
+},
+
+// ===========================
+// SISTEMA DE COLUNAS
+// ===========================
+columns: {
+    single: { 
+        width: 174,  // largura total disponível em mm
+        x: 18       // margin left
+    },
+    dual: { 
+        left: { width: 85, x: 18 },
+        right: { width: 85, x: 107 },
+        gap: 4
+    },
+    triple: {
+        left: { width: 56, x: 18 },
+        center: { width: 56, x: 78 },
+        right: { width: 56, x: 138 },
+        gap: 2
+    }
+},
+
+// ===========================
+// POSIÇÕES FIXAS DA PÁGINA 1
+// ===========================
+page1Layout: {
+    resumo: {
+        y: 45,
+        height: 25,
+        title: 'RESUMO DO PROJETO'
+    },
+    consultor: {
+        y: 75,
+        height: 20,
+        title: 'DADOS DO CONSULTOR'
+    },
+    maquina: {
+        y: 100,
+        height: 80,
+        title: 'ESPECIFICAÇÕES DA MÁQUINA'
+    },
+    acionamentos: {
+        y: 185,
+        height: 60,
+        title: 'ACIONAMENTOS DE AUTOMAÇÃO',
+        maxLines: 2  // máximo 2 linhas por acionamento
+    }
+},
+
+// ===========================
+// CAMPOS COM PLACEHOLDER
+// ===========================
+fieldDefaults: {
+    placeholder: 'N/A',
+    showEmpty: true,  // mostrar campos vazios com placeholder
+    emptyColor: [156, 163, 175]  // cor cinza para placeholders
+    },
+
+// ===========================
+// CONFIGURAÇÕES DE PÁGINA FIXA
+// ===========================
+fixedPage: {
+    enabled: true,
+    forceLayout: true,          // força layout mesmo com pouco conteúdo
+    preventOverflow: true,      // impede conteúdo de vazar para próxima seção
+    compactMode: true          // modo compacto para economizar espaço
 }
+
 };
