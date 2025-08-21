@@ -18,14 +18,26 @@ export const PDF_STYLE = {
         paragraph: 10,  // espaço depois de parágrafos longos
         subsection: 5   // opcional (pra subtítulos internos)
     },
-    colors: {
-        primary: [37, 99, 235],
-        secondary: [100, 116, 139],
-        text: [30, 41, 59],
-        light: [148, 163, 184],
-        background: [248, 250, 252],
-        white: [255, 255, 255]
-    },
+    
+colors: {
+    primary: [37, 99, 235],
+    secondary: [100, 116, 139],
+    text: [30, 41, 59],
+    light: [148, 163, 184],
+    background: [248, 250, 252],
+    white: [255, 255, 255],
+    
+    // Cores dos painéis
+    panelPrimary: [37, 99, 235],    // Azul - resumo/principal
+    panelSuccess: [34, 197, 94],    // Verde - consultor
+    panelInfo: [14, 165, 233],      // Ciano - cliente  
+    panelPurple: [139, 69, 19],     // Roxo - máquina
+    panelOrange: [234, 88, 12],     // Laranja - acionamentos
+    
+    // Backgrounds dos painéis
+    panelBg: [249, 250, 251],
+    panelBorder: [226, 232, 240]
+},
     fonts: {
         default: 'helvetica',
         sizes: {
@@ -105,30 +117,29 @@ columns: {
 page1Layout: {
     resumo: {
         y: 45,
-        height: 25,
+        height: 20,
         title: 'RESUMO DO PROJETO'
     },
     consultor: {
-        y: 75,
-        height: 20,
+        y: 70,
+        height: 18,
         title: 'DADOS DO CONSULTOR'
     },
     cliente: {
-        y: 100,
-        height: 25,
+        y: 95,
+        height: 35,
         title: 'DADOS DO CLIENTE'
     },
-maquina: {
-    y: 130,
-    height: 70,
-    title: 'ESPECIFICAÇÕES DA MÁQUINA'
-},
+    maquina: {
+        y: 135,
+        height: 45,
+        title: 'ESPECIFICAÇÕES DA MÁQUINA'
+    },
 acionamentos: {
-    y: 205,
-        height: 60,
-        title: 'ACIONAMENTOS DE AUTOMAÇÃO',
-        maxLines: 2  // máximo 2 linhas por acionamento
-    }
+    y: 220,
+    height: 45,  // 5 acionamentos x ~8mm cada = ~40mm + cabeçalho
+    title: 'ACIONAMENTOS DE AUTOMAÇÃO'
+}
 },
 
 // ===========================
@@ -139,6 +150,24 @@ fieldDefaults: {
     showEmpty: true,  // mostrar campos vazios com placeholder
     emptyColor: [156, 163, 175]  // cor cinza para placeholders
     },
+
+// ===========================
+// CONFIGURAÇÕES DE PAINÉIS
+// ===========================
+panels: {
+    headerHeight: 12,
+    contentPadding: 2,        // Era 4, agora 2 (cola mais o cabeçalho na tabela)
+    panelSpacing: 2,          // Era 4, agora 2 (menos espaço entre seções)
+    borderRadius: 2,
+    shadowEnabled: false,
+    
+    // Configurações por seção
+    resumo: { color: 'panelPrimary', icon: '📋' },
+    consultor: { color: 'panelSuccess', icon: '👤' },
+    cliente: { color: 'panelInfo', icon: '🏢' },
+    maquina: { color: 'panelPurple', icon: '⚙️' },
+    acionamentos: { color: 'panelOrange', icon: '🔧' }
+},
 
 // ===========================
 // CONFIGURAÇÕES DE PÁGINA FIXA
