@@ -730,52 +730,67 @@ updateSummaryStats() {
             return data;
         }
 
-        loadData() {
-            const data = window.FichaTecnica?.appData?.[MODULE_NAME];
-            if (!data) return;
+loadData() {
+    // Tentar múltiplas fontes de dados
+    const data = window.FichaTecnica?.state?.data?.[MODULE_NAME] || 
+                 window.FichaTecnica?.appData?.[MODULE_NAME] ||
+                 {};
+    
+    console.log(`🤖 Tentando carregar dados de automação:`, data);
+    
+    if (!data || Object.keys(data).length === 0) {
+        console.log(`🤖 Nenhum dado encontrado para ${MODULE_NAME}`);
+        return;
+    }
 
-            // Resetar estado
-            this.activeDevices.clear();
+    // Resetar estado
+    this.activeDevices.clear();
 
-            // Carregar dados
-            Object.entries(data).forEach(([deviceId, deviceData]) => {
-                const checkbox = document.getElementById(`device-${deviceId}`);
-                const quantityInput = document.getElementById(`qty-${deviceId}`);
-                const observationInput = document.getElementById(`obs-${deviceId}`);
-                
-                if (checkbox) {
-                    checkbox.checked = true;
-                    
-                    if (quantityInput) {
-                        quantityInput.value = deviceData.quantity || '1';
-                        quantityInput.disabled = false;
-                    }
-                    
-                    if (observationInput) {
-                        observationInput.value = deviceData.observation || '';
-                        observationInput.disabled = false;
-                    }
-                    
-                    // Ativar visualmente
-                    const deviceItem = checkbox.closest('.device-item');
-                    if (deviceItem) {
-                        deviceItem.classList.add('active');
-                    }
-                    
-                    // Adicionar aos ativos
-                    this.activeDevices.set(deviceId, {
-                        quantity: deviceData.quantity || '1',
-                        observation: deviceData.observation || ''
-                    });
-                }
-            });
-
-            // Atualizar contadores
-            this.updateCategoryCounters();
-            this.updateSummaryStats();
+    // Carregar dados
+    Object.entries(data).forEach(([deviceId, deviceData]) => {
+        console.log(`🤖 Carregando dispositivo: ${deviceId}`, deviceData);
+        
+        const checkbox = document.getElementById(`device-${deviceId}`);
+        const quantityInput = document.getElementById(`qty-${deviceId}`);
+        const observationInput = document.getElementById(`obs-${deviceId}`);
+        
+        if (checkbox) {
+            checkbox.checked = true;
             
-            console.log(`🤖 Dados carregados para ${MODULE_NAME}`);
+            if (quantityInput) {
+                quantityInput.value = deviceData.quantity || '1';
+                quantityInput.disabled = false;
+            }
+            
+            if (observationInput) {
+                observationInput.value = deviceData.observation || '';
+                observationInput.disabled = false;
+            }
+            
+            // Ativar visualmente
+            const deviceItem = checkbox.closest('.device-item');
+            if (deviceItem) {
+                deviceItem.classList.add('active');
+            }
+            
+            // Adicionar aos ativos
+            this.activeDevices.set(deviceId, {
+                quantity: deviceData.quantity || '1',
+                observation: deviceData.observation || ''
+            });
+            
+            console.log(`🤖 Dispositivo ${deviceId} carregado: Qtd=${deviceData.quantity}, Obs="${deviceData.observation}"`);
+        } else {
+            console.warn(`🤖 Checkbox não encontrado para: device-${deviceId}`);
         }
+    });
+
+    // Atualizar contadores
+    this.updateCategoryCounters();
+    this.updateSummaryStats();
+    
+    console.log(`🤖 Dados carregados para ${MODULE_NAME}. Total dispositivos ativos: ${this.activeDevices.size}`);
+}
 
         validateSection() {
             // Não obrigatório ter dispositivos de automação

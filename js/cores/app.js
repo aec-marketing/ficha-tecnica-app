@@ -156,6 +156,26 @@ class ModuleSystem {
 // ===========================================
 // NAVEGAÇÃO
 // ===========================================
+
+// Event listener global para botões de navegação
+document.addEventListener('click', (e) => {
+    // Botões "Próximo" das seções sem módulos
+    if (e.target.matches('.btn-next[data-next]')) {
+        const nextSection = e.target.getAttribute('data-next');
+        if (nextSection) {
+            FichaTecnica.showSection(nextSection);
+        }
+    }
+    
+    // Botões "Anterior" das seções sem módulos
+    if (e.target.matches('.btn-prev[data-prev]')) {
+        const prevSection = e.target.getAttribute('data-prev');
+        if (prevSection) {
+            FichaTecnica.showSection(prevSection);
+        }
+    }
+});
+
 class NavigationManager {
     constructor(moduleSystem) {
         this.moduleSystem = moduleSystem;
@@ -615,26 +635,110 @@ function scheduleAutoSave() {
 // ===========================================
 function setupActionButtons() {
     const actions = {
-        exportBtn: () => dataManager?.export?.() || alert('DataManager não carregado'),
-        importBtn: () => dataManager?.import?.() || alert('DataManager não carregado'),
-        clearBtn: () => dataManager?.clear?.() || clearAllDataFallback(),
-        cleanCacheBtn: () => dataManager?.cleanCache?.() || alert('DataManager não carregado'),
-        printBtn: () => window.print(),
-        generatePdfBtn: () => {
-    if (window.PDFSystem) {
-        window.PDFSystem.generatePDF();
-    } else if (window.generatePDF) {
-        window.generatePDF();
-    } else if (window.pdfGenerator?.generate) {
-        window.pdfGenerator.generate();
-    } else {
-        alert('PDF Generator não carregado');
-    }
-}    };
+        exportBtn: () => {
+            if (window.dataManager?.export) {
+                window.dataManager.export();
+            } else if (typeof dataManager !== 'undefined' && dataManager.export) {
+                dataManager.export();
+            } else {
+                alert('DataManager não carregado');
+            }
+        },
+        importBtn: () => {
+            if (window.dataManager?.import) {
+                window.dataManager.import();
+            } else if (typeof dataManager !== 'undefined' && dataManager.import) {
+                dataManager.import();
+            } else {
+                alert('DataManager não carregado');
+            }
+        },
+        clearBtn: () => {
+            if (window.dataManager?.clear) {
+                window.dataManager.clear();
+            } else if (typeof dataManager !== 'undefined' && dataManager.clear) {
+                dataManager.clear();
+            } else {
+                clearAllDataFallback();
+            }
+        },
+        cleanCacheBtn: () => {
+            if (window.dataManager?.cleanCache) {
+                window.dataManager.cleanCache();
+            } else if (typeof dataManager !== 'undefined' && dataManager.cleanCache) {
+                dataManager.cleanCache();
+            } else {
+                alert('DataManager não carregado');
+            }
+        },
+        printBtn: () => window.print()
+    };
     
+    // Configurar botões normais
     Object.entries(actions).forEach(([id, handler]) => {
         const button = document.getElementById(id);
-        if (button) button.addEventListener('click', handler);
+        if (button) {
+            // Remove listeners existentes
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            // Adiciona novo listener
+            newButton.addEventListener('click', handler);
+        }
+    });
+    
+    // Configuração especial para botão PDF
+    setupPDFButton();
+}
+
+function setupPDFButton() {
+    const button = document.getElementById('generatePdfBtn');
+    if (!button) return;
+    
+    // Remove listeners existentes clonando o botão
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    
+    let isGenerating = false;
+    
+    newButton.addEventListener('click', async function(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        
+        // Verificar se já está gerando
+        if (isGenerating) {
+            console.warn('PDF já está sendo gerado...');
+            return;
+        }
+        
+        isGenerating = true;
+        
+        try {
+            // Desabilitar botão visualmente
+            newButton.disabled = true;
+            newButton.textContent = 'Gerando PDF...';
+            
+            // Chamar geração
+            if (window.pdfSystem?.generatePDF) {
+                await window.pdfSystem.generatePDF();
+            } else if (window.PDFSystem?.generatePDF) {
+                await window.PDFSystem.generatePDF();
+            } else if (typeof generatePDF === 'function') {
+                await generatePDF();
+            } else {
+                alert('PDF Generator não carregado');
+            }
+            
+        } catch (error) {
+            console.error('Erro na geração PDF:', error);
+            alert('Erro ao gerar PDF: ' + error.message);
+        } finally {
+            // Restaurar botão
+            setTimeout(() => {
+                newButton.disabled = false;
+                newButton.innerHTML = '<i class="icon-pdf"></i> Gerar PDF';
+                isGenerating = false;
+            }, 2000);
+        }
     });
 }
 

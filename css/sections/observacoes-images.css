@@ -1,0 +1,779 @@
+/**
+ * OBSERVAÇÕES - SISTEMA DE IMAGENS CSS
+ * Arquivo: css/sections/observacoes-images.css
+ * Estilos específicos para upload e gerenciamento de imagens
+ */
+
+/* ===========================
+   CONTAINER PRINCIPAL
+   =========================== */
+
+.images-container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.images-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.images-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    color: #374151;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.images-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.images-count {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Status do Cloudinary */
+.cloudinary-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+}
+
+.status-dot.online {
+    background: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.status-dot.offline {
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.status-dot.local {
+    background: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.status-dot.error {
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* ===========================
+   ÁREA DE UPLOAD
+   =========================== */
+
+.upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+}
+
+.upload-area.dragover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: scale(1.02);
+}
+
+.upload-area.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.upload-text h4 {
+    margin: 0 0 0.5rem 0;
+    color: #374151;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.upload-text p {
+    margin: 0 0 0.5rem 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.upload-text small {
+    color: #9ca3af;
+    font-size: 0.75rem;
+}
+
+/* ===========================
+   BARRA DE PROGRESSO
+   =========================== */
+
+.upload-progress {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.upload-progress.hidden {
+    display: none;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+/* ===========================
+   LISTA DE IMAGENS
+   =========================== */
+
+.images-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.image-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.image-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Preview da Imagem */
+.image-preview {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.image-item:hover .image-preview img {
+    transform: scale(1.05);
+}
+
+/* Overlay com botões */
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-item:hover .image-overlay {
+    opacity: 1;
+}
+
+.image-overlay button {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.image-overlay button:hover {
+    background: #ffffff;
+    transform: scale(1.1);
+}
+
+.btn-remove:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+}
+
+.btn-view:hover {
+    background: #eff6ff !important;
+    color: #2563eb !important;
+}
+
+/* Informações da Imagem */
+.image-info {
+    padding: 0.75rem;
+}
+
+.image-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.image-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.image-source {
+    background: #e5e7eb;
+    color: #6b7280;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.image-source[title*="Cloudinary"] {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.image-source[title*="fallback"] {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.image-size {
+    color: #9ca3af;
+}
+
+.compression-info {
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* ===========================
+   MODAL DE VISUALIZAÇÃO
+   =========================== */
+
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.modal-header h4 {
+    margin: 0;
+    color: #374151;
+    font-size: 1.1rem;
+    font-weight: 600;
+    flex: 1;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.btn-close:hover {
+    color: #374151;
+}
+
+.modal-body {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.modal-body img {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.image-metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.image-metadata a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.image-metadata a:hover {
+    text-decoration: underline;
+}
+
+/* ===========================
+   PREVIEW DE IMAGENS
+   =========================== */
+
+.preview-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.preview-image {
+    text-align: center;
+}
+
+.preview-image img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.image-caption {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===========================
+   RESPONSIVIDADE
+   =========================== */
+
+@media (max-width: 768px) {
+    .images-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .images-info {
+        align-self: stretch;
+        justify-content: space-between;
+    }
+
+    .upload-area {
+        padding: 1.5rem 1rem;
+    }
+
+    .images-list {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .image-preview {
+        height: 120px;
+    }
+
+    .modal-content {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+        max-height: calc(100vh - 2rem);
+    }
+
+    .modal-body {
+        min-height: 200px;
+    }
+
+    .modal-body img {
+        max-height: 50vh;
+    }
+
+    .image-metadata {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
+    .preview-images {
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .preview-image img {
+        height: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    .images-container {
+        padding: 1rem;
+    }
+
+    .upload-content {
+        gap: 0.75rem;
+    }
+
+    .upload-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+
+    .upload-text h4 {
+        font-size: 1rem;
+    }
+
+    .upload-text p {
+        font-size: 0.8rem;
+    }
+
+    .images-list {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .image-info {
+        padding: 0.5rem;
+    }
+
+    .image-name {
+        font-size: 0.8rem;
+    }
+
+    .image-details {
+        gap: 0.25rem;
+    }
+}
+
+/* ===========================
+   ANIMAÇÕES
+   =========================== */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.upload-area.dragover {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.image-item {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.progress-fill {
+    background: linear-gradient(
+        90deg,
+        #3b82f6,
+        #1d4ed8,
+        #3b82f6
+    );
+    background-size: 200% 100%;
+    animation: progress-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ===========================
+   ESTADOS ESPECIAIS
+   =========================== */
+
+.upload-area.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.upload-area.loading .upload-icon {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.image-item.uploading {
+    opacity: 0.8;
+}
+
+.image-item.uploading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Notificações */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 9999;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    background: #10b981;
+}
+
+.notification.warning {
+    background: #f59e0b;
+}
+
+.notification.error {
+    background: #ef4444;
+}
+
+.notification.info {
+    background: #3b82f6;
+}
+
+/* ===========================
+   MELHORIAS DE ACESSIBILIDADE
+   =========================== */
+
+.upload-area:focus-within {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.image-overlay button:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.modal-content {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Estados de hover melhorados */
+.upload-area:hover .upload-icon {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
+
+.image-item:hover .image-name {
+    color: #1f2937;
+}
+
+/* Loading states */
+.cloudinary-status.loading .status-dot {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* ===========================
+   DARK MODE SUPPORT (FUTURO)
+   =========================== */
+
+@media (prefers-color-scheme: dark) {
+    .images-container {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .upload-area {
+        background: #111827;
+        border-color: #4b5563;
+    }
+
+    .upload-area:hover {
+        background: #1f2937;
+        border-color: #3b82f6;
+    }
+
+    .image-item {
+        background: #111827;
+        border-color: #374151;
+    }
+
+    .modal-content {
+        background: #1f2937;
+    }
+
+    .modal-header,
+    .modal-footer {
+        background: #111827;
+        border-color: #374151;
+    }
+
+    .upload-text h4,
+    .image-name,
+    .modal-header h4 {
+        color: #f9fafb;
+    }
+
+    .upload-text p,
+    .images-count,
+    .image-size,
+    .image-metadata {
+        color: #d1d5db;
+    }
+
+    .upload-text small {
+        color: #9ca3af;
+    }
+}

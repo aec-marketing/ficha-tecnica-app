@@ -1,717 +1,813 @@
 /**
- * SEÇÃO OBSERVAÇÕES GERAIS - observacoes.js (REFATORADO)
- * Módulo para observações e detalhamento do projeto - Versão conservadora
+ * SEÇÃO OBSERVAÇÕES - observacoes.js (ATUALIZADO COM CLOUDINARY)
+ * Módulo para observações gerais + upload de imagens híbrido
+ * 
+ * Funcionalidades:
+ * - 4 textareas para observações
+ * - Upload de até 3 imagens com Cloudinary + fallback local
+ * - Preview melhorado com progresso
+ * - Export/Import sincronizado
  */
 
 (function() {
     'use strict';
 
-    // ===========================================
-    // CONFIGURAÇÃO LIMPA E ORGANIZADA
-    // ===========================================
-    const MODULE_CONFIG = {
-        name: 'observacoes',
-        sectionId: 'section-observacoes',
-        
-        // Campos de texto - configuração simplificada
-        textFields: [
-            {
-                id: 'consideracoesTecnicas',
-                label: 'Considerações Técnicas',
-                placeholder: 'Informações técnicas relevantes, problemas identificados, soluções propostas, especificações especiais...',
-                icon: '🔧',
-                help: 'Detalhe aspectos técnicos, problemas encontrados e soluções propostas'
-            },
-            {
-                id: 'cronogramaPrazos',
-                label: 'Cronograma e Prazos',
-                placeholder: 'Cronograma de execução, datas importantes, fases do projeto, marcos críticos...',
-                icon: '📅',
-                help: 'Informe prazos estimados, etapas do projeto e marcos importantes'
-            },
-            {
-                id: 'requisitosEspeciais',
-                label: 'Requisitos Especiais',
-                placeholder: 'Requisitos específicos, condições especiais, responsabilidades, normas aplicáveis...',
-                icon: '⚙️',
-                help: 'Liste condições especiais, normas aplicáveis e responsabilidades'
-            },
-            {
-                id: 'documentosNecessarios',
-                label: 'Documentos e Entregáveis',
-                placeholder: 'Documentos a serem entregues, materiais inclusos, serviços, certificações necessárias...',
-                icon: '📋',
-                help: 'Especifique entregáveis, documentação e certificações necessárias'
-            }
-        ],
-        
-        // Configuração de imagens
-        images: {
-            maxCount: 3,
-            maxSizeBytes: 5 * 1024 * 1024, // 5MB
-            allowedTypes: ['image/png', 'image/jpg', 'image/jpeg'],
-            allowedExtensions: ['.png', '.jpg', '.jpeg']
-        },
+    const MODULE_NAME = 'observacoes';
+    const SECTION_ID = 'section-observacoes';
+    const MAX_IMAGES = 3;
+    const MAX_CHARS = 600;
 
-        // Configuração de textarea
-        textarea: {
-            maxLength: 600,
-            minRows: 4,
-            maxRows: 8
-        },
-
-        defaultData: {
-            consideracoesTecnicas: '', cronogramaPrazos: '', requisitosEspeciais: '',
-            documentosNecessarios: '', imagens: []
-        }
+    // Dados padrão
+    const DEFAULT_DATA = {
+        consideracoesTecnicas: '',
+        cronogramaPrazos: '',
+        requisitosEspeciais: '',
+        documentosNecessarios: '',
+        imagens: []
     };
 
-    // ===========================================
-    // TEMPLATE HTML SEPARADO
-    // ===========================================
-    const HTML_TEMPLATE = `
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="icon-document"></i>
-                Observações Gerais do Projeto
-            </h2>
-            <div class="section-progress">
-                <span class="step-counter">Passo 8 de 8</span>
-                <span class="final-step">Etapa Final</span>
-            </div>
-        </div>
-        
-        <div class="section-content">
-            <div class="intro-card observacoes-intro">
-                <div class="intro-content">
-                    <h3>📝 Finalize seu Projeto</h3>
-                    <p>Adicione todas as informações complementares, observações técnicas e requisitos específicos 
-                       que considerem importante para o projeto. Esta é sua oportunidade de detalhar aspectos únicos 
-                       da solução proposta.</p>
-                </div>
-                
-                <div class="completion-indicator">
-                    <div class="completion-circle">
-                        <span class="completion-percent" id="completionPercent">95%</span>
-                    </div>
-                    <span class="completion-text">Quase pronto!</span>
-                </div>
-            </div>
+    // ===========================
+    // CLASSE PRINCIPAL DO MÓDULO
+    // ===========================
 
-            <form class="form-observacoes" id="observacoesForm">
-                
-                <!-- Campos de Texto -->
-                <div class="text-fields-container" id="textFieldsContainer">
-                    <!-- Campos serão inseridos aqui -->
-                </div>
-
-                <!-- Seção de Imagens -->
-                <div class="images-section">
-                    <div class="images-header">
-                        <h4 class="section-subtitle">
-                            <span class="subtitle-icon">📸</span>
-                            Imagens do Projeto
-                        </h4>
-                        <div class="images-counter">
-                            <span id="imageCount">0</span>/${MODULE_CONFIG.images.maxCount} imagens
-                        </div>
-                    </div>
-
-                    <!-- Upload Area -->
-                    <div class="upload-area" id="uploadArea">
-                        <div class="upload-content">
-                            <div class="upload-icon">📁</div>
-                            <div class="upload-text">
-                                <strong>Clique para selecionar</strong> ou arraste imagens aqui
-                            </div>
-                            <div class="upload-info">
-                                PNG, JPG ou JPEG • Máx: 5MB por imagem
-                            </div>
-                        </div>
-                        <input type="file" id="imageInput" class="file-input" 
-                               accept=".png,.jpg,.jpeg,image/png,image/jpeg" 
-                               multiple>
-                    </div>
-
-                    <!-- Preview das Imagens -->
-                    <div class="images-preview" id="imagesPreview">
-                        <!-- Imagens aparecerão aqui -->
-                    </div>
-                </div>
-
-            </form>
-        </div>
-        
-        <div class="section-footer">
-            <button class="btn btn-secondary btn-prev">
-                <i class="icon-arrow-left"></i>
-                Anterior
-            </button>
-            <button class="btn btn-success btn-finalize" id="btnFinalize">
-                <i class="icon-check"></i>
-                Finalizar e Gerar PDF
-            </button>
-        </div>
-    `;
-
-    // ===========================================
-    // CLASSE PRINCIPAL SIMPLIFICADA
-    // ===========================================
     class ObservacoesModule {
         constructor() {
-            this.config = MODULE_CONFIG;
+            this.isInitialized = false;
             this.sectionElement = null;
             this.uploadedImages = [];
-            this.dragCounter = 0;
-            this.isInitialized = false;
+            this.uploadInProgress = false;
         }
 
         init() {
             if (this.isInitialized) return;
 
-            console.log(`📝 Inicializando módulo ${this.config.name}`);
+            console.log(`Inicializando módulo ${MODULE_NAME}`);
 
             try {
-                this.sectionElement = document.getElementById(this.config.sectionId);
+                this.sectionElement = document.getElementById(SECTION_ID);
                 
                 if (!this.sectionElement) {
-                    throw new Error(`Seção ${this.config.sectionId} não encontrada`);
+                    throw new Error(`Seção ${SECTION_ID} não encontrada`);
                 }
 
-                this.render();
-                this.setupEvents();
+                this.createSectionHTML();
+                this.setupEventListeners();
                 this.registerWithCore();
 
                 this.isInitialized = true;
-                console.log(`✅ Módulo ${this.config.name} inicializado`);
+                console.log(`Módulo ${MODULE_NAME} inicializado`);
 
             } catch (error) {
-                console.error(`❌ Erro ao inicializar ${this.config.name}:`, error);
+                console.error(`Erro ao inicializar ${MODULE_NAME}:`, error);
                 throw error;
             }
         }
 
-        render() {
-            this.sectionElement.innerHTML = HTML_TEMPLATE;
-            this.renderTextFields();
-        }
+        createSectionHTML() {
+            const html = `
+                <div class="section-content">
+                    <!-- Observações Textuais -->
+                    <div class="observations-container">
+                        <div class="obs-grid">
+                            <div class="obs-group">
+                                <label for="consideracoesTecnicas" class="form-label">
+                                    <i class="icon-gear"></i>
+                                    Considerações Técnicas
+                                </label>
+                                <textarea id="consideracoesTecnicas" class="form-textarea" rows="4" 
+                                          maxlength="${MAX_CHARS}" 
+                                          placeholder="Aspectos técnicos importantes, requisitos especiais de instalação, compatibilidades..."></textarea>
+                                <div class="char-counter">
+                                    <span id="consideracoesTecnicas-count">0</span>/${MAX_CHARS}
+                                </div>
+                            </div>
 
-        renderTextFields() {
-            const container = document.getElementById('textFieldsContainer');
-            if (!container) return;
+                            <div class="obs-group">
+                                <label for="cronogramaPrazos" class="form-label">
+                                    <i class="icon-calendar"></i>
+                                    Cronograma e Prazos
+                                </label>
+                                <textarea id="cronogramaPrazos" class="form-textarea" rows="4" 
+                                          maxlength="${MAX_CHARS}" 
+                                          placeholder="Datas importantes, etapas do projeto, prazos de entrega..."></textarea>
+                                <div class="char-counter">
+                                    <span id="cronogramaPrazos-count">0</span>/${MAX_CHARS}
+                                </div>
+                            </div>
 
-            container.innerHTML = this.config.textFields.map(field => 
-                this.generateTextFieldHTML(field)
-            ).join('');
-        }
+                            <div class="obs-group">
+                                <label for="requisitosEspeciais" class="form-label">
+                                    <i class="icon-star"></i>
+                                    Requisitos Especiais
+                                </label>
+                                <textarea id="requisitosEspeciais" class="form-textarea" rows="4" 
+                                          maxlength="${MAX_CHARS}" 
+                                          placeholder="Certificações necessárias, normas específicas, requisitos do cliente..."></textarea>
+                                <div class="char-counter">
+                                    <span id="requisitosEspeciais-count">0</span>/${MAX_CHARS}
+                                </div>
+                            </div>
 
-        generateTextFieldHTML(field) {
-            return `
-                <div class="form-group textarea-group">
-                    <label for="${field.id}" class="form-label">
-                        <span class="field-icon">${field.icon}</span>
-                        ${field.label}
-                    </label>
-                    <div class="textarea-container">
-                        <textarea 
-                            id="${field.id}" 
-                            name="${field.id}" 
-                            class="form-textarea" 
-                            placeholder="${field.placeholder}"
-                            maxlength="${this.config.textarea.maxLength}"
-                            rows="${this.config.textarea.minRows}"></textarea>
-                        <div class="character-counter">
-                            <span class="char-count" id="${field.id}-count">0</span>
-                            <span class="char-max">/${this.config.textarea.maxLength}</span>
+                            <div class="obs-group">
+                                <label for="documentosNecessarios" class="form-label">
+                                    <i class="icon-document"></i>
+                                    Documentos e Entregáveis
+                                </label>
+                                <textarea id="documentosNecessarios" class="form-textarea" rows="4" 
+                                          maxlength="${MAX_CHARS}" 
+                                          placeholder="Manuais, laudos, relatórios, documentação técnica necessária..."></textarea>
+                                <div class="char-counter">
+                                    <span id="documentosNecessarios-count">0</span>/${MAX_CHARS}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="form-help">${field.help}</div>
+
+                    <!-- Sistema de Upload de Imagens -->
+                    <div class="images-container">
+                        <div class="images-header">
+                            <h3>
+                                <i class="icon-image"></i>
+                                Imagens do Projeto
+                            </h3>
+                            <div class="images-info">
+                                <span class="images-count" id="imagesCount">0 de ${MAX_IMAGES}</span>
+                                <div class="cloudinary-status" id="cloudinaryStatus">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">Verificando...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Area -->
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <div class="upload-icon">
+                                    <i class="icon-upload"></i>
+                                </div>
+                                <div class="upload-text">
+                                    <h4>Adicionar Imagens</h4>
+                                    <p>Arraste arquivos aqui ou clique para selecionar</p>
+                                    <small>Máximo ${MAX_IMAGES} imagens • JPG, PNG • Até 5MB cada</small>
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="selectImagesBtn">
+                                    <i class="icon-folder"></i>
+                                    Selecionar Arquivos
+                                </button>
+                            </div>
+                            <input type="file" id="imageInput" accept="image/*" multiple hidden>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="upload-progress hidden" id="uploadProgress">
+                            <div class="progress-info">
+                                <span id="progressText">Processando...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Imagens -->
+                        <div class="images-list" id="imagesList">
+                            <!-- Imagens serão inseridas dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-footer">
+                    <button class="btn btn-secondary btn-prev">
+                        <i class="icon-arrow-left"></i>
+                        Anterior
+                    </button>
+                    <button class="btn btn-primary btn-next">
+                        Finalizar: Visualizar Ficha
+                        <i class="icon-arrow-right"></i>
+                    </button>
                 </div>
             `;
+
+            this.sectionElement.innerHTML = html;
         }
 
-        // ===========================================
-        // EVENT HANDLING UNIFICADO
-        // ===========================================
-
-        setupEvents() {
-            // Event delegation
-            this.sectionElement.addEventListener('input', this.handleInput.bind(this));
-            this.sectionElement.addEventListener('click', this.handleClick.bind(this));
-            this.sectionElement.addEventListener('change', this.handleChange.bind(this));
-            
-            // Upload específico
-            this.setupImageUpload();
-        }
-
-        handleInput(event) {
-            const { target } = event;
-
-            // Contador de caracteres e auto-resize para textareas
-            if (target.classList.contains('form-textarea')) {
-                this.updateCharacterCounter(target);
-                this.autoResizeTextarea(target);
+setupEventListeners() {
+    // Contadores de caracteres
+    this.setupCharCounters();
+    
+    // Sistema de upload
+    this.setupImageUpload();
+    
+    // Navegação
+    this.setupNavigationListeners();
+    
+    // Status do Cloudinary
+    this.updateCloudinaryStatus();
+    
+    // NOVO: Event listener para reload forçado
+    this.sectionElement.addEventListener('forceImageReload', async (event) => {
+        console.log('Forçando reload de imagens...');
+        const images = event.detail.images;
+        
+        if (images && Array.isArray(images)) {
+            try {
+                // Restaurar via CloudinaryManager
+                let restoredImages = images;
+                if (window.cloudinaryManager) {
+                    restoredImages = await window.cloudinaryManager.restoreFromImport(images);
+                }
                 
-                // Debounce para mudança
-                clearTimeout(this.inputTimeout);
-                this.inputTimeout = setTimeout(() => {
-                    this.notifyChange();
+                // Atualizar a variável interna
+                this.uploadedImages = restoredImages;
+                
+                // Renderizar na interface
+                const imagesList = document.getElementById('imagesList');
+                if (imagesList) {
+                    imagesList.innerHTML = '';
+                    restoredImages.forEach(img => this.renderImageItem(img));
+                }
+                
+                this.updateImageCount();
+                console.log(`Imagens recarregadas: ${restoredImages.length}`);
+                
+            } catch (error) {
+                console.error('Erro no reload:', error);
+            }
+        }
+    });
+}
+
+        setupCharCounters() {
+            const textareas = ['consideracoesTecnicas', 'cronogramaPrazos', 'requisitosEspeciais', 'documentosNecessarios'];
+            
+            textareas.forEach(id => {
+                const textarea = document.getElementById(id);
+                const counter = document.getElementById(`${id}-count`);
+                
+                if (textarea && counter) {
+                    // Evento em tempo real
+                    textarea.addEventListener('input', () => {
+                        const count = textarea.value.length;
+                        counter.textContent = count;
+                        
+                        // Feedback visual
+                        if (count > MAX_CHARS * 0.9) {
+                            counter.parentElement.classList.add('warning');
+                        } else {
+                            counter.parentElement.classList.remove('warning');
+                        }
+                        
+                        this.handleFieldChange();
+                    });
+                }
+            });
+        }
+
+        setupImageUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const selectBtn = document.getElementById('selectImagesBtn');
+
+            // Drag & Drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = Array.from(e.dataTransfer.files);
+                this.handleImageFiles(files);
+            });
+
+            // Click para selecionar
+            selectBtn.addEventListener('click', () => imageInput.click());
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target === uploadArea || e.target.closest('.upload-content')) {
+                    imageInput.click();
+                }
+            });
+
+            // Input file
+            imageInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                this.handleImageFiles(files);
+                e.target.value = ''; // Reset input
+            });
+        }
+
+        setupNavigationListeners() {
+            const prevBtn = this.sectionElement.querySelector('.btn-prev');
+            const nextBtn = this.sectionElement.querySelector('.btn-next');
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    if (window.FichaTecnica?.showSection) {
+                        window.FichaTecnica.showSection('infraestrutura');
+                    }
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    if (window.FichaTecnica?.showSection) {
+                        window.FichaTecnica.showSection('preview');
+                    }
+                });
+            }
+        }
+
+        // ===========================
+        // GERENCIAMENTO DE IMAGENS
+        // ===========================
+
+        async handleImageFiles(files) {
+            // Filtrar apenas imagens
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                this.showNotification('Nenhuma imagem válida selecionada', 'warning');
+                return;
+            }
+
+            // Verificar limite
+            const remainingSlots = MAX_IMAGES - this.uploadedImages.length;
+            if (remainingSlots <= 0) {
+                this.showNotification('Limite máximo de imagens atingido', 'warning');
+                return;
+            }
+
+            const filesToProcess = imageFiles.slice(0, remainingSlots);
+            
+            if (filesToProcess.length < imageFiles.length) {
+                this.showNotification(`Processando apenas ${filesToProcess.length} de ${imageFiles.length} imagens (limite: ${MAX_IMAGES})`, 'info');
+            }
+
+            // Processar arquivos
+            await this.processImageFiles(filesToProcess);
+        }
+
+        async processImageFiles(files) {
+            this.uploadInProgress = true;
+            this.showProgress(true);
+
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const progressBase = (i / files.length) * 100;
+                    
+                    this.updateProgress(progressBase, `Processando ${file.name}...`);
+                    
+                    // Verificar CloudinaryManager
+                    if (!window.cloudinaryManager) {
+                        throw new Error('CloudinaryManager não disponível');
+                    }
+                    
+                    // Processar imagem
+                    const imageData = await window.cloudinaryManager.processImage(file, (progress, status) => {
+                        const totalProgress = progressBase + (progress / files.length);
+                        this.updateProgress(totalProgress, status);
+                    });
+                    
+                    // Adicionar à lista
+                    this.uploadedImages.push(imageData);
+                    this.renderImageItem(imageData);
+                }
+                
+                this.updateProgress(100, 'Concluído!');
+                this.showNotification(`${files.length} imagem(ns) processada(s) com sucesso`, 'success');
+                
+            } catch (error) {
+                console.error('Erro no processamento:', error);
+                this.showNotification(`Erro: ${error.message}`, 'error');
+            } finally {
+                setTimeout(() => {
+                    this.showProgress(false);
+                    this.uploadInProgress = false;
+                    this.updateImageCount();
+                    this.handleFieldChange();
+                }, 1000);
+            }
+        }
+
+        renderImageItem(imageData) {
+            const imagesList = document.getElementById('imagesList');
+            if (!imagesList) return;
+
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'image-item';
+            imageDiv.dataset.imageId = imageData.id;
+
+            // Obter URL da imagem
+            const imageUrl = window.cloudinaryManager.getImageUrl(imageData, 'medium') || 
+                           window.cloudinaryManager.getImageUrl(imageData);
+
+            const sourceIcon = imageData.source === 'hybrid' ? '☁️' : 
+                              imageData.source === 'local-fallback' ? '⚠️' : '📱';
+            
+            const sourceText = imageData.source === 'hybrid' ? 'Cloudinary + Local' :
+                              imageData.source === 'local-fallback' ? 'Local (Cloudinary falhou)' : 'Apenas Local';
+
+            imageDiv.innerHTML = `
+                <div class="image-preview">
+                    <img src="${imageUrl}" alt="${imageData.filename}" loading="lazy">
+                    <div class="image-overlay">
+                        <button class="btn-remove" data-action="remove">
+                            <i class="icon-trash"></i>
+                        </button>
+                        <button class="btn-view" data-action="view">
+                            <i class="icon-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="image-info">
+                    <div class="image-name" title="${imageData.filename}">${imageData.filename}</div>
+                    <div class="image-details">
+                        <span class="image-source" title="${sourceText}">
+                            ${sourceIcon} ${imageData.source}
+                        </span>
+                        <span class="image-size">${this.formatFileSize(imageData.local?.size || 0)}</span>
+                        ${imageData.local?.compressionRatio ? 
+                            `<span class="compression-info">-${imageData.local.compressionRatio}%</span>` : ''}
+                    </div>
+                </div>
+            `;
+
+            // Eventos
+            const removeBtn = imageDiv.querySelector('[data-action="remove"]');
+            const viewBtn = imageDiv.querySelector('[data-action="view"]');
+
+            removeBtn.addEventListener('click', () => this.removeImage(imageData.id));
+            viewBtn.addEventListener('click', () => this.viewImage(imageData));
+
+            // Animação de entrada
+            imageDiv.style.opacity = '0';
+            imageDiv.style.transform = 'scale(0.9)';
+            imagesList.appendChild(imageDiv);
+
+            // Animar entrada
+            requestAnimationFrame(() => {
+                imageDiv.style.transition = 'all 0.3s ease';
+                imageDiv.style.opacity = '1';
+                imageDiv.style.transform = 'scale(1)';
+            });
+        }
+
+        removeImage(imageId) {
+            if (!confirm('Remover esta imagem?')) return;
+
+            // Remover dos dados
+            this.uploadedImages = this.uploadedImages.filter(img => img.id !== imageId);
+
+            // Remover da interface
+            const imageElement = document.querySelector(`[data-image-id="${imageId}"]`);
+            if (imageElement) {
+                imageElement.style.transition = 'all 0.3s ease';
+                imageElement.style.opacity = '0';
+                imageElement.style.transform = 'scale(0.9)';
+                
+                setTimeout(() => {
+                    imageElement.remove();
+                    this.updateImageCount();
+                    this.handleFieldChange();
                 }, 300);
             }
         }
 
-        handleClick(event) {
-            const { target } = event;
+        viewImage(imageData) {
+            const imageUrl = window.cloudinaryManager.getImageUrl(imageData);
+            if (!imageUrl) return;
 
-            // Upload area
-            if (target.closest('#uploadArea') && this.uploadedImages.length < this.config.images.maxCount) {
-                document.getElementById('imageInput').click();
-            }
-
-            // Remover imagem
-            if (target.classList.contains('remove-image')) {
-                event.stopPropagation();
-                const imageId = parseFloat(target.getAttribute('data-image-id'));
-                this.removeImage(imageId);
-            }
-
-            // Navegação
-            if (target.matches('.btn-prev')) {
-                FichaTecnica.showSection('infraestrutura');
-            } else if (target.matches('.btn-finalize')) {
-                this.handleFinalize();
-            }
-        }
-
-        handleChange(event) {
-            const { target } = event;
-
-            // Upload de imagens
-            if (target.id === 'imageInput') {
-                this.handleFileSelection(target.files);
-            }
-        }
-
-        // ===========================================
-        // TEXTAREA HELPERS
-        // ===========================================
-
-        updateCharacterCounter(textarea) {
-            const counter = document.getElementById(`${textarea.id}-count`);
-            if (!counter) return;
-
-            const length = textarea.value.length;
-            counter.textContent = length;
-            
-            // Visual feedback
-            counter.classList.remove('warning', 'danger');
-            const maxLength = this.config.textarea.maxLength;
-            
-            if (length > maxLength * 0.9) {
-                counter.classList.add('danger');
-            } else if (length > maxLength * 0.7) {
-                counter.classList.add('warning');
-            }
-        }
-
-        autoResizeTextarea(textarea) {
-            textarea.style.height = 'auto';
-            const maxHeight = this.config.textarea.maxRows * 24; // Aproximadamente 24px por linha
-            textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
-        }
-
-        // ===========================================
-        // IMAGE UPLOAD SYSTEM
-        // ===========================================
-
-        setupImageUpload() {
-            const uploadArea = document.getElementById('uploadArea');
-            if (!uploadArea) return;
-
-            // Drag & Drop
-            uploadArea.addEventListener('dragenter', this.handleDragEnter.bind(this));
-            uploadArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
-            uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
-            uploadArea.addEventListener('drop', this.handleDrop.bind(this));
-        }
-
-        handleDragEnter(e) {
-            e.preventDefault();
-            this.dragCounter++;
-            e.currentTarget.classList.add('drag-over');
-        }
-
-        handleDragLeave(e) {
-            e.preventDefault();
-            this.dragCounter--;
-            if (this.dragCounter === 0) {
-                e.currentTarget.classList.remove('drag-over');
-            }
-        }
-
-        handleDragOver(e) {
-            e.preventDefault();
-        }
-
-        handleDrop(e) {
-            e.preventDefault();
-            this.dragCounter = 0;
-            e.currentTarget.classList.remove('drag-over');
-            
-            if (this.uploadedImages.length < this.config.images.maxCount) {
-                this.handleFileSelection(e.dataTransfer.files);
-            }
-        }
-
-        handleFileSelection(files) {
-            const remainingSlots = this.config.images.maxCount - this.uploadedImages.length;
-            const filesToProcess = Math.min(files.length, remainingSlots);
-
-            for (let i = 0; i < filesToProcess; i++) {
-                const file = files[i];
-                if (this.validateImageFile(file)) {
-                    this.processImageFile(file);
-                }
-            }
-
-            // Limpar input
-            const imageInput = document.getElementById('imageInput');
-            if (imageInput) imageInput.value = '';
-        }
-
-        validateImageFile(file) {
-            // Verificar tipo
-            if (!this.config.images.allowedTypes.includes(file.type)) {
-                alert(`Formato não suportado: ${file.name}\nUse apenas PNG, JPG ou JPEG.`);
-                return false;
-            }
-
-            // Verificar tamanho
-            if (file.size > this.config.images.maxSizeBytes) {
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-                const maxMB = (this.config.images.maxSizeBytes / (1024 * 1024)).toFixed(1);
-                alert(`Imagem muito grande: ${file.name} (${sizeMB}MB)\nTamanho máximo: ${maxMB}MB`);
-                return false;
-            }
-
-            return true;
-        }
-
-        processImageFile(file) {
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                const imageData = {
-                    id: Date.now() + Math.random(),
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    dataUrl: e.target.result
-                };
-
-                this.uploadedImages.push(imageData);
-                this.updateImagePreview();
-                this.updateImageCounter();
-                this.notifyChange();
-            };
-
-            reader.onerror = () => {
-                alert(`Erro ao carregar imagem: ${file.name}`);
-            };
-
-            reader.readAsDataURL(file);
-        }
-
-        updateImagePreview() {
-            const preview = document.getElementById('imagesPreview');
-            if (!preview) return;
-
-            if (this.uploadedImages.length === 0) {
-                preview.innerHTML = '';
-                return;
-            }
-
-            const imagesHTML = this.uploadedImages.map(image => 
-                this.generateImagePreviewHTML(image)
-            ).join('');
-
-            preview.innerHTML = `<div class="preview-grid">${imagesHTML}</div>`;
-        }
-
-        generateImagePreviewHTML(image) {
-            const sizeText = (image.size / 1024).toFixed(0) + 'KB';
-            const truncatedName = this.truncateFileName(image.name);
-            
-            return `
-                <div class="image-preview-item" data-image-id="${image.id}">
-                    <div class="image-container">
-                        <img src="${image.dataUrl}" alt="${image.name}" class="preview-image">
-                        <button class="remove-image" data-image-id="${image.id}" title="Remover imagem">
-                            ✕
-                        </button>
+            // Criar modal simples
+            const modal = document.createElement('div');
+            modal.className = 'image-modal';
+            modal.innerHTML = `
+                <div class="modal-backdrop"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4>${imageData.filename}</h4>
+                        <button class="btn-close">&times;</button>
                     </div>
-                    <div class="image-info">
-                        <div class="image-name" title="${image.name}">${truncatedName}</div>
-                        <div class="image-size">${sizeText}</div>
+                    <div class="modal-body">
+                        <img src="${imageUrl}" alt="${imageData.filename}">
+                    </div>
+                    <div class="modal-footer">
+                        <div class="image-metadata">
+                            <div>Fonte: ${imageData.source}</div>
+                            <div>Tamanho: ${this.formatFileSize(imageData.local?.size || 0)}</div>
+                            <div>Dimensões: ${imageData.local?.dimensions?.width || 0} × ${imageData.local?.dimensions?.height || 0}px</div>
+                            ${imageData.cloud ? `<div>URL: <a href="${imageData.cloud.url}" target="_blank">Cloudinary</a></div>` : ''}
+                        </div>
                     </div>
                 </div>
             `;
+
+            document.body.appendChild(modal);
+
+            // Fechar modal
+            const closeModal = () => {
+                modal.remove();
+            };
+
+            modal.querySelector('.btn-close').addEventListener('click', closeModal);
+            modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+            
+            // ESC para fechar
+            const escHandler = (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
         }
 
-        removeImage(imageId) {
-            const index = this.uploadedImages.findIndex(img => img.id === imageId);
-            if (index !== -1) {
-                this.uploadedImages.splice(index, 1);
-                this.updateImagePreview();
-                this.updateImageCounter();
-                this.notifyChange();
+        // ===========================
+        // UI HELPERS
+        // ===========================
+
+        showProgress(show) {
+            const progressEl = document.getElementById('uploadProgress');
+            if (progressEl) {
+                progressEl.classList.toggle('hidden', !show);
             }
         }
 
-        updateImageCounter() {
-            const counter = document.getElementById('imageCount');
+        updateProgress(percent, text) {
+            const progressText = document.getElementById('progressText');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressFill = document.getElementById('progressFill');
+
+            if (progressText) progressText.textContent = text;
+            if (progressPercent) progressPercent.textContent = `${Math.round(percent)}%`;
+            if (progressFill) progressFill.style.width = `${percent}%`;
+        }
+
+        updateImageCount() {
+            const countEl = document.getElementById('imagesCount');
+            if (countEl) {
+                countEl.textContent = `${this.uploadedImages.length} de ${MAX_IMAGES}`;
+            }
+
+            // Atualizar estado do upload area
             const uploadArea = document.getElementById('uploadArea');
-            
-            if (counter) {
-                counter.textContent = this.uploadedImages.length;
-            }
-
             if (uploadArea) {
-                uploadArea.classList.toggle('upload-disabled', 
-                    this.uploadedImages.length >= this.config.images.maxCount);
+                uploadArea.classList.toggle('disabled', this.uploadedImages.length >= MAX_IMAGES);
             }
         }
 
-        truncateFileName(filename, maxLength = 20) {
-            if (filename.length <= maxLength) return filename;
-            
-            const extension = filename.substring(filename.lastIndexOf('.'));
-            const name = filename.substring(0, filename.lastIndexOf('.'));
-            const truncatedName = name.substring(0, maxLength - extension.length - 3);
-            
-            return truncatedName + '...' + extension;
-        }
+        updateCloudinaryStatus() {
+            const statusEl = document.getElementById('cloudinaryStatus');
+            if (!statusEl) return;
 
-        // ===========================================
-        // FINALIZATION
-        // ===========================================
+            const dot = statusEl.querySelector('.status-dot');
+            const text = statusEl.querySelector('.status-text');
 
-        handleFinalize() {
-            console.log('🎯 Finalizando projeto...');
-            
-            if (!this.hasMinimumContent()) {
-                alert('Adicione pelo menos uma observação ou imagem antes de finalizar.');
-                return;
+            if (window.cloudinaryManager) {
+                const status = window.cloudinaryManager.getSystemStatus();
+                
+                if (status.configured && status.online) {
+                    dot.className = 'status-dot online';
+                    text.textContent = `Cloudinary (${status.cloudName})`;
+                } else if (status.configured && !status.online) {
+                    dot.className = 'status-dot offline';
+                    text.textContent = 'Cloudinary (offline)';
+                } else {
+                    dot.className = 'status-dot local';
+                    text.textContent = 'Apenas local';
+                }
+            } else {
+                dot.className = 'status-dot error';
+                text.textContent = 'Sistema indisponível';
             }
+        }
 
-            // Emitir evento de finalização
-            if (window.FichaTecnica?.emit) {
-                FichaTecnica.emit('projectFinalized', {
-                    section: this.config.name,
-                    data: this.collectData()
-                });
+        showNotification(message, type = 'info') {
+            // Usar sistema de notificação do PDF se disponível
+            if (window.PDFSystem?.ui?.showNotification) {
+                window.PDFSystem.ui.showNotification(message, type);
+            } else {
+                // Fallback simples
+                console.log(`${type.toUpperCase()}: ${message}`);
+                alert(message);
             }
-
-            console.log('✅ Projeto finalizado com sucesso!');
         }
 
-        hasMinimumContent() {
-            const data = this.collectData();
-            
-            // Verificar textos (pelo menos 10 caracteres)
-            const hasText = this.config.textFields.some(field => 
-                data[field.id] && data[field.id].trim().length > 10
-            );
-            
-            // Verificar imagens
-            const hasImages = data.imagens && data.imagens.length > 0;
-            
-            return hasText || hasImages;
+        formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // ===========================================
-        // API OBRIGATÓRIA PARA O CORE
-        // ===========================================
+        // ===========================
+        // API PARA O CORE
+        // ===========================
 
         collectData() {
+            const textareas = ['consideracoesTecnicas', 'cronogramaPrazos', 'requisitosEspeciais', 'documentosNecessarios'];
             const data = {};
 
             // Coletar textos
-            this.config.textFields.forEach(field => {
-                const textarea = document.getElementById(field.id);
-                if (textarea) {
-                    data[field.id] = textarea.value.trim();
-                }
+            textareas.forEach(id => {
+                const element = document.getElementById(id);
+                data[id] = element?.value?.trim() || '';
             });
 
-            // Coletar imagens
-            data.imagens = this.uploadedImages.map(img => ({
-                id: img.id,
-                name: img.name,
-                size: img.size,
-                type: img.type,
-                dataUrl: img.dataUrl
-            }));
+            // Preparar imagens para salvamento
+            data.imagens = window.cloudinaryManager?.prepareForExport(this.uploadedImages) || this.uploadedImages;
 
             return data;
         }
 
-        loadData() {
-            const data = FichaTecnica?.state?.data?.[this.config.name];
+        async loadData() {
+            const data = window.FichaTecnica?.state?.data?.[MODULE_NAME];
             if (!data) return;
 
             // Carregar textos
-            this.config.textFields.forEach(field => {
-                const textarea = document.getElementById(field.id);
-                if (textarea && data[field.id]) {
-                    textarea.value = data[field.id];
-                    this.updateCharacterCounter(textarea);
-                    this.autoResizeTextarea(textarea);
+            const textareas = ['consideracoesTecnicas', 'cronogramaPrazos', 'requisitosEspeciais', 'documentosNecessarios'];
+            textareas.forEach(id => {
+                const element = document.getElementById(id);
+                const counter = document.getElementById(`${id}-count`);
+                
+                if (element && data[id]) {
+                    element.value = data[id];
+                    if (counter) counter.textContent = data[id].length;
                 }
             });
 
             // Carregar imagens
-            if (data.imagens && Array.isArray(data.imagens)) {
-                this.uploadedImages = [...data.imagens];
-                this.updateImagePreview();
-                this.updateImageCounter();
+            if (data.imagens && Array.isArray(data.imagens) && data.imagens.length > 0) {
+                try {
+                    // Restaurar imagens (pode incluir download do Cloudinary)
+                    const restoredImages = window.cloudinaryManager ? 
+                        await window.cloudinaryManager.restoreFromImport(data.imagens) : 
+                        data.imagens;
+
+                    this.uploadedImages = restoredImages;
+                    
+                    // Renderizar imagens
+                    const imagesList = document.getElementById('imagesList');
+                    if (imagesList) {
+                        imagesList.innerHTML = '';
+                        this.uploadedImages.forEach(img => this.renderImageItem(img));
+                    }
+                    
+                    this.updateImageCount();
+                    
+                } catch (error) {
+                    console.error('Erro ao carregar imagens:', error);
+                    this.showNotification('Erro ao carregar algumas imagens', 'warning');
+                }
             }
 
-            console.log(`📝 Dados carregados para ${this.config.name}`);
+            console.log(`Dados carregados para ${MODULE_NAME}`);
         }
 
         validateSection() {
-            return this.hasMinimumContent();
+            // Observações são opcionais
+            return true;
         }
 
         generatePreview() {
             const data = this.collectData();
-            
-            if (!FichaTecnica?.hasSectionData?.(data)) return null;
+            let hasContent = false;
 
             let html = `
                 <div class="preview-section">
                     <h3>📝 Observações Gerais</h3>
-                    <div class="preview-content-obs">
             `;
 
             // Textos
-            this.config.textFields.forEach(field => {
-                if (data[field.id] && data[field.id].trim()) {
+            const sections = [
+                { key: 'consideracoesTecnicas', title: 'Considerações Técnicas', icon: '⚙️' },
+                { key: 'cronogramaPrazos', title: 'Cronograma e Prazos', icon: '📅' },
+                { key: 'requisitosEspeciais', title: 'Requisitos Especiais', icon: '⭐' },
+                { key: 'documentosNecessarios', title: 'Documentos Necessários', icon: '📄' }
+            ];
+
+            sections.forEach(section => {
+                if (data[section.key]) {
+                    hasContent = true;
                     html += `
-                        <div class="preview-observation">
-                            <h4>${field.icon} ${field.label}</h4>
-                            <p class="observation-text">${this.formatTextForPreview(data[field.id])}</p>
+                        <div class="preview-subsection">
+                            <h4>${section.icon} ${section.title}</h4>
+                            <p>${this.escapeHtml(data[section.key])}</p>
                         </div>
                     `;
                 }
             });
 
             // Imagens
-            if (data.imagens && data.imagens.length > 0) {
+            if (this.uploadedImages.length > 0) {
+                hasContent = true;
                 html += `
-                    <div class="preview-observation">
-                        <h4>📸 Imagens do Projeto</h4>
-                        <div class="preview-images-grid">
+                    <div class="preview-subsection">
+                        <h4>📸 Imagens do Projeto (${this.uploadedImages.length})</h4>
+                        <div class="preview-images">
                 `;
-                
-                data.imagens.forEach(image => {
-                    html += `
-                        <div class="preview-image-item">
-                            <img src="${image.dataUrl}" alt="${image.name}" class="preview-img">
-                            <span class="preview-img-name">${image.name}</span>
-                        </div>
-                    `;
+
+                this.uploadedImages.forEach(img => {
+                    const url = window.cloudinaryManager?.getImageUrl(img, 'small') || 
+                               window.cloudinaryManager?.getImageUrl(img);
+                    if (url) {
+                        html += `
+                            <div class="preview-image">
+                                <img src="${url}" alt="${img.filename}" loading="lazy">
+                                <span class="image-caption">${this.escapeHtml(img.filename)}</span>
+                            </div>
+                        `;
+                    }
                 });
-                
+
                 html += '</div></div>';
             }
 
-            html += '</div></div>';
-            return html;
+            html += '</div>';
+            
+            return hasContent ? html : null;
         }
 
-        formatTextForPreview(text) {
-            return text
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\n/g, '<br>')
-                .replace(/\r/g, '');
-        }
-
-        clearData() {
-            // Limpar textareas
-            this.config.textFields.forEach(field => {
-                const textarea = document.getElementById(field.id);
-                const counter = document.getElementById(`${field.id}-count`);
-                
-                if (textarea) {
-                    textarea.value = '';
-                    textarea.style.height = 'auto';
-                }
-                
-                if (counter) {
-                    counter.textContent = '0';
-                    counter.classList.remove('warning', 'danger');
-                }
-            });
-
-            // Limpar imagens
-            this.uploadedImages = [];
-            this.updateImagePreview();
-            this.updateImageCounter();
-        }
-
-        notifyChange() {
+        handleFieldChange() {
             if (window.FichaTecnica?.emit) {
-                FichaTecnica.emit('sectionChanged', { 
-                    section: this.config.name,
+                window.FichaTecnica.emit('sectionChanged', { 
+                    section: MODULE_NAME,
                     data: this.collectData()
                 });
             }
         }
 
-        // ===========================================
-        // REGISTRO NO CORE
-        // ===========================================
-
         registerWithCore() {
             if (window.FichaTecnica?.registerModule) {
-                FichaTecnica.registerModule({
-                    name: this.config.name,
+                window.FichaTecnica.registerModule({
+                    name: MODULE_NAME,
                     instance: this,
                     hasForm: true,
                     hasPreview: true,
-                    hasValidation: false, // Não obrigatório
+                    hasValidation: false,
                     isSimple: false,
-                    fields: Object.keys(this.config.defaultData),
-                    defaultData: this.config.defaultData
+                    fields: ['consideracoesTecnicas', 'cronogramaPrazos', 'requisitosEspeciais', 'documentosNecessarios', 'imagens'],
+                    defaultData: DEFAULT_DATA
                 });
             }
 
             if (window.FichaTecnica?.on) {
-                FichaTecnica.on('loadData', () => this.loadData());
-                FichaTecnica.on('clearData', () => this.clearData());
+                window.FichaTecnica.on('loadData', () => this.loadData());
+                window.FichaTecnica.on('clearData', () => this.clearData());
             }
+        }
+
+        clearData() {
+            // Limpar textareas
+            const textareas = ['consideracoesTecnicas', 'cronogramaPrazos', 'requisitosEspeciais', 'documentosNecessarios'];
+            textareas.forEach(id => {
+                const element = document.getElementById(id);
+                const counter = document.getElementById(`${id}-count`);
+                
+                if (element) element.value = '';
+                if (counter) counter.textContent = '0';
+            });
+
+            // Limpar imagens
+            this.uploadedImages = [];
+            const imagesList = document.getElementById('imagesList');
+            if (imagesList) imagesList.innerHTML = '';
+            
+            this.updateImageCount();
+        }
+
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     }
 
-    // ===========================================
+    // ===========================
     // AUTO-INICIALIZAÇÃO
-    // ===========================================
+    // ===========================
 
-    function initModule() {
-        const waitForCore = () => {
-            if (window.FichaTecnica) {
-                const module = new ObservacoesModule();
-                module.init();
-            } else {
-                setTimeout(waitForCore, 100);
-            }
-        };
+function initModule() {
+    const waitForCore = () => {
+        if (window.FichaTecnica) {
+            const module = new ObservacoesModule();
+            module.init();
+            // NOVO: Expor globalmente para import
+            window.observacoesModule = module;
+        } else {
+            setTimeout(waitForCore, 100);
+        }
+    };
 
-        waitForCore();
-    }
+    waitForCore();
+}
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initModule);

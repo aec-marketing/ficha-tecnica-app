@@ -356,14 +356,18 @@ class DataManager {
         }
     }
 
-    restoreInterface(data) {
-        this.restoreBasicFields(data);
-        this.restoreMachineCheckboxes(data);
-        this.restoreDevices(data);
-        this.restoreAcionamentos(data);
-        this.restoreInfraestrutura(data);
-        this.restoreObservacoes(data);
-    }
+restoreInterface(data) {
+    this.restoreBasicFields(data);
+    this.restoreMachineTensoes(data);  // Adicione esta linha
+    this.restoreMachineCheckboxes(data);
+    this.restoreDevices(data);
+    this.restoreAcionamentos(data);
+    this.restoreInfraestrutura(data);
+    this.restoreObservacoes(data);
+    
+    // NOVO: Restaurar imagens do Cloudinary
+    setTimeout(() => this.restoreCloudinaryImages(data), 1000);
+}
 
     restoreBasicFields(data) {
         const fieldMap = [
@@ -384,10 +388,8 @@ class DataManager {
             
             // Máquina
             [data.maquina?.nome, 'maquinaNome'],
-            [data.maquina?.tensaoEntrada, 'maquinaTensaoEntrada'],
             [data.maquina?.fase, 'maquinaFase'],
             [data.maquina?.neutro, 'maquinaNeutro'],
-            [data.maquina?.tensaoComando, 'maquinaTensaoComando'],
             [data.maquina?.tipoControle, 'maquinaTipoControle']
         ];
         
@@ -397,55 +399,134 @@ class DataManager {
         });
     }
 
-    restoreMachineCheckboxes(data) {
-        const checkboxMap = {
-            tipoDispositivo: {
-                'Novo': 'tipoNovo'
-            },
-            tipoPainel: {
-                'Aço Carbono': 'painelAco'
-            },
-            abordagem: {
-                'Painel de Automação': 'abordagemAutomacao'
-            }
-        };
-        
-        Object.entries(checkboxMap).forEach(([dataKey, mapping]) => {
-            const values = data.maquina?.[dataKey] || [];
-            values.forEach(value => {
-                const checkboxId = mapping[value];
-                if (checkboxId) {
-                    const checkbox = document.getElementById(checkboxId);
-                    if (checkbox) checkbox.checked = true;
+restoreMachineCheckboxes(data) {
+    const checkboxMap = {
+        tipoDispositivo: {
+            'Novo': 'tipoNovo',
+            'Retrofit': 'tipoRetrofit', 
+            'Adequação NR10/NR12': 'tipoAdequacao',
+            'Automação': 'tipoAutomacao'
+        },
+        tipoPainel: {
+            'Aço Carbono': 'painelAco',
+            'ABS': 'painelABS',
+            'Inox': 'painelInox'
+        },
+        abordagem: {
+            'Painel de Automação': 'abordagemAutomacao',
+            'Painel de Segurança': 'abordagemSeguranca'
+        }
+    };
+    
+    Object.entries(checkboxMap).forEach(([dataKey, mapping]) => {
+        const values = data.maquina?.[dataKey] || [];
+        values.forEach(value => {
+            const checkboxId = mapping[value];
+            if (checkboxId) {
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) checkbox.checked = true;
+            } else {
+                // Valor customizado vai para campo "Outro"
+                if (dataKey === 'tipoPainel') {
+                    const painelOutro = document.getElementById('painelOutro');
+                    const painelOutroTexto = document.getElementById('painelOutroTexto');
+                    if (painelOutro && painelOutroTexto) {
+                        painelOutro.checked = true;
+                        painelOutroTexto.value = value;
+                        document.getElementById('painelOutroField').style.display = 'block';
+                    }
                 }
-            });
+            }
+        });
+    });
+}
+restoreMachineTensoes(data) {
+    const tensaoFields = [
+        {
+            id: 'maquinaTensaoEntrada',
+            value: data.maquina?.tensaoEntrada,
+            standardOptions: ['110V', '220V', '380V', '440V']
+        },
+        {
+            id: 'maquinaTensaoComando', 
+            value: data.maquina?.tensaoComando,
+            standardOptions: ['24Vcc', '24Vca', '110Vca', '220Vca']
+        }
+    ];
+    
+    tensaoFields.forEach(field => {
+        if (!field.value) return;
+        
+        const select = document.getElementById(field.id);
+        if (!select) return;
+        
+        // Verificar se é opção padrão
+        if (field.standardOptions.includes(field.value)) {
+            select.value = field.value;
+        } else {
+            // Valor customizado - usar campo "Outro"
+            select.value = 'outro';
+            const outroField = document.getElementById(field.id + 'Outro');
+            if (outroField) {
+                outroField.value = field.value;
+                outroField.style.display = 'block';
+            }
+        }
+    });
+}
+restoreDevices(data) {
+    // Segurança
+    if (data.seguranca) {
+        ['botoes', 'controladores'].forEach(type => {
+            const devices = data.seguranca[type];
+            if (devices) {
+                Object.entries(devices).forEach(([key, device]) => {
+                    if (device?.quantity && device.quantity !== '0') {
+                        this.restoreDevice(key, device);
+                    }
+                });
+            }
         });
     }
-
-    restoreDevices(data) {
-        // Segurança
-        if (data.seguranca) {
-            ['botoes', 'controladores'].forEach(type => {
-                const devices = data.seguranca[type];
-                if (devices) {
-                    Object.entries(devices).forEach(([key, device]) => {
-                        if (device?.quantity && device.quantity !== '0') {
-                            this.restoreDevice(key, device);
-                        }
-                    });
-                }
-            });
-        }
-        
-        // Automação
-        if (data.automacao) {
-            Object.entries(data.automacao).forEach(([key, device]) => {
-                if (device?.quantity && device.quantity !== '0') {
-                    this.restoreDevice(key, device);
-                }
-            });
-        }
+    
+    // Automação - CORREÇÃO AQUI
+    if (data.automacao) {
+        Object.entries(data.automacao).forEach(([deviceId, device]) => {
+            if (device?.quantity && device.quantity !== '0') {
+                // Para automação, usar deviceId diretamente
+                this.restoreAutomacaoDevice(deviceId, device);
+            }
+        });
     }
+}
+
+// Adicionar este novo método após o método restoreDevice:
+restoreAutomacaoDevice(deviceId, deviceData) {
+    const checkbox = document.getElementById(`device-${deviceId}`);
+    if (!checkbox) return;
+    
+    checkbox.checked = true;
+    
+    const quantityInput = document.getElementById(`qty-${deviceId}`);
+    const observationInput = document.getElementById(`obs-${deviceId}`);
+    
+    if (quantityInput) {
+        quantityInput.value = deviceData.quantity || '1';
+        quantityInput.disabled = false;
+    }
+    
+    if (observationInput) {
+        observationInput.value = deviceData.observation || '';
+        observationInput.disabled = false;
+    }
+    
+    const deviceItem = checkbox.closest('.device-item');
+    if (deviceItem) {
+        deviceItem.classList.add('active');
+    }
+    
+    console.log(`Automação restaurada: ${deviceId} - Qtd: ${deviceData.quantity} - Obs: ${deviceData.observation}`);
+}
 
     restoreDevice(deviceKey, deviceData) {
         const checkbox = document.getElementById(`device-${deviceKey}`);
@@ -514,32 +595,70 @@ class DataManager {
         }, 300);
     }
 
-    restoreInfraestrutura(data) {
-        const infraData = data.infraestrutura;
-        if (!infraData) return;
+restoreInfraestrutura(data) {
+    const infraData = data.infraestrutura;
+    if (!infraData) return;
+    
+    // Campos com dropdown + "Outro"
+    this.restoreInfraestruturaDropdowns(infraData);
+    
+    // Resto do código existente...
+    const fields = [
+        'distanciaEnergia', 'distanciaAr', 'protocoloBase'
+    ];
+    
+    fields.forEach(field => this.setFieldValue(field, infraData[field]));
+    
+    // Protocolos e horários
+    this.restoreCheckboxGroup(infraData.protocoloOpcoes, {
+        'Sinal Analógico 0-10v': 'protocoloAnalogico0_10v',
+        'Sinal Analógico 4-20mA': 'protocoloAnalogico4_20mA',
+        'Sinal Digital': 'protocoloDigital',
+        'Sistema Independente': 'protocoloSistemaIndependente'
+    });
+    
+    this.restoreCheckboxGroup(infraData.horarioTrabalho, {
+        'ADM (8h - 18h)': 'horarioADM',
+        'Final de Semana': 'horarioFinalSemana',
+        'Feriado': 'horarioFeriado'
+    });
+}
+
+restoreInfraestruturaDropdowns(infraData) {
+    const dropdownFields = [
+        'pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido',
+        'fixacaoPainel', 'fixacaoDispositivo'
+    ];
+    
+    const fieldOptions = {
+        pontoAlimentacao: ['Disponível no local', 'Realizar instalação ao ponto'],
+        infraestruturaCabeamento: ['Disponível', 'Realizar instalação'],
+        pontoArComprimido: ['Disponível', 'Realizar instalação'],
+        fixacaoPainel: ['Suporte no chão', 'Parede'],
+        fixacaoDispositivo: ['Rodízio', 'Fixo no chão']
+    };
+    
+    dropdownFields.forEach(fieldId => {
+        const value = infraData[fieldId];
+        if (!value) return;
         
-        const fields = [
-            'pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido',
-            'fixacaoPainel', 'fixacaoDispositivo', 'distanciaEnergia', 
-            'distanciaAr', 'protocoloBase'
-        ];
+        const select = document.getElementById(fieldId);
+        if (!select) return;
         
-        fields.forEach(field => this.setFieldValue(field, infraData[field]));
-        
-        // Protocolos e horários
-        this.restoreCheckboxGroup(infraData.protocoloOpcoes, {
-            'Sinal Analógico 0-10v': 'protocoloAnalogico0_10v',
-            'Sinal Analógico 4-20mA': 'protocoloAnalogico4_20mA',
-            'Sinal Digital': 'protocoloDigital',
-            'Sistema Independente': 'protocoloSistemaIndependente'
-        });
-        
-        this.restoreCheckboxGroup(infraData.horarioTrabalho, {
-            'ADM (8h - 18h)': 'horarioADM',
-            'Final de Semana': 'horarioFinalSemana',
-            'Feriado': 'horarioFeriado'
-        });
-    }
+        // Verificar se é opção padrão
+        if (fieldOptions[fieldId] && fieldOptions[fieldId].includes(value)) {
+            select.value = value;
+        } else {
+            // Valor customizado - usar campo "Outro"
+            select.value = 'outro';
+            const outroField = document.getElementById(fieldId + 'Outro');
+            if (outroField) {
+                outroField.value = value;
+                outroField.style.display = 'block';
+            }
+        }
+    });
+}
 
     restoreObservacoes(data) {
         const obsData = data.observacoes;
@@ -689,11 +808,44 @@ class DataManager {
         try {
             localStorage.removeItem(this.storageKeys.data);
             localStorage.removeItem(this.storageKeys.metadata);
-            console.log('🧹 LocalStorage limpo');
-        } catch (error) {
-            console.error('❌ Erro ao limpar storage:', error);
-        }
+        console.log('🧹 LocalStorage limpo');
+    } catch (error) {
+        console.error('❌ Erro ao limpar storage:', error);
     }
+}
+
+async restoreCloudinaryImages(data) {
+    if (!data.observacoes?.imagens || !Array.isArray(data.observacoes.imagens)) {
+        return;
+    }
+    
+    console.log('Aplicando imagens diretamente ao state...');
+    
+    // Aplicar aos dados do state
+    if (window.FichaTecnica?.state?.data) {
+        if (!window.FichaTecnica.state.data.observacoes) {
+            window.FichaTecnica.state.data.observacoes = {};
+        }
+        window.FichaTecnica.state.data.observacoes.imagens = data.observacoes.imagens;
+    }
+    
+    // Aguardar um pouco e tentar encontrar o módulo de forma mais direta
+    setTimeout(async () => {
+        try {
+            // Buscar o módulo através do loadData que já foi chamado
+            const obsSection = document.getElementById('section-observacoes');
+            if (obsSection) {
+                // Disparar um evento customizado para forçar o loadData
+                const customEvent = new CustomEvent('forceImageReload', {
+                    detail: { images: data.observacoes.imagens }
+                });
+                obsSection.dispatchEvent(customEvent);
+            }
+        } catch (error) {
+            console.log('Erro no reload forçado:', error);
+        }
+    }, 3000);
+}
 
     showCleanupFeedback() {
         const btn = document.getElementById('cleanCacheBtn');
@@ -720,3 +872,11 @@ if (window.FichaTecnica) {
 }
 
 console.log('💾 dataManager.js carregado');
+
+// Expor globalmente
+window.dataManager = dataManager;
+
+// Configurar botões se app.js já carregou
+if (window.FichaTecnica && typeof setupActionButtons === 'function') {
+    setupActionButtons();
+}

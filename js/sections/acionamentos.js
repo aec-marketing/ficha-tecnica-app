@@ -95,9 +95,11 @@
         }
 
         createSectionHTML() {
-            const quantityOptions = Array.from({ length: ACIONAMENTO_CONFIG.maxAcionamentos }, (_, i) => 
-                `<option value="${i + 1}">${i + 1} acionamento${i > 0 ? 's' : ''}</option>`
-            ).join('');
+// Opção para zero acionamentos + opções 1-5
+const quantityOptions = `<option value="0">Nenhum acionamento</option>` + 
+    Array.from({ length: ACIONAMENTO_CONFIG.maxAcionamentos }, (_, i) => 
+        `<option value="${i + 1}">${i + 1} acionamento${i > 0 ? 's' : ''}</option>`
+    ).join('');
 
             const html = `
                 <div class="section-header">
@@ -472,27 +474,34 @@
             progressFill.style.width = `${percentage}%`;
         }
 
-        updateNextButtonState() {
-            const nextBtn = document.getElementById('nextBtn');
-            if (!nextBtn) return;
+updateNextButtonState() {
+    const nextBtn = document.getElementById('nextBtn');
+    if (!nextBtn) return;
 
-            // Verificar se todos os acionamentos estão completos
-            let allComplete = true;
-            for (let i = 1; i <= this.currentQuantity; i++) {
-                if (!this.isAcionamentoComplete(i)) {
-                    allComplete = false;
-                    break;
-                }
-            }
+    // Se não tem acionamentos (quantidade = 0), pode avançar
+    if (this.currentQuantity === 0) {
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('btn-disabled');
+        return;
+    }
 
-            if (this.currentQuantity > 0 && allComplete) {
-                nextBtn.disabled = false;
-                nextBtn.classList.remove('btn-disabled');
-            } else {
-                nextBtn.disabled = true;
-                nextBtn.classList.add('btn-disabled');
-            }
+    // Se tem acionamentos, verificar se todos estão completos
+    let allComplete = true;
+    for (let i = 1; i <= this.currentQuantity; i++) {
+        if (!this.isAcionamentoComplete(i)) {
+            allComplete = false;
+            break;
         }
+    }
+
+    if (allComplete) {
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('btn-disabled');
+    } else {
+        nextBtn.disabled = true;
+        nextBtn.classList.add('btn-disabled');
+    }
+}
 
         validateAcionamentoField(field) {
             const value = field.value.trim();
@@ -614,35 +623,43 @@
             console.log(`🔧 Dados carregados para ${MODULE_NAME}`);
         }
 
-        validateSection() {
-            if (this.currentQuantity === 0) {
-                alert('Selecione pelo menos um acionamento para continuar.');
+validateSection() {
+    // Acionamentos agora são opcionais
+    const quantidadeSelect = document.getElementById('numAcionamentos');
+    const quantidade = parseInt(quantidadeSelect?.value) || 0;
+    
+    // Se não tem acionamentos, está válido
+    if (quantidade === 0) return true;
+    
+    // Se tem acionamentos, validar apenas os preenchidos
+    for (let i = 1; i <= quantidade; i++) {
+        const tipo = document.getElementById(`acionamento${i}Tipo`)?.value;
+        const descricao = document.getElementById(`acionamento${i}Descricao`)?.value?.trim();
+        
+        // Se algum campo foi preenchido, exigir que todos sejam preenchidos
+        if (tipo || descricao) {
+            if (!tipo) {
+                this.showError(`Tipo do acionamento ${i} é obrigatório`);
                 return false;
             }
-
-            let isValid = true;
-            for (let i = 1; i <= this.currentQuantity; i++) {
-                if (!this.isAcionamentoComplete(i)) {
-                    isValid = false;
-                    
-                    // Destacar acionamento incompleto
-                    const acionamentoCard = document.querySelector(`#acionamento-${i} .acionamento-card`);
-                    if (acionamentoCard) {
-                        acionamentoCard.classList.add('error');
-                        setTimeout(() => {
-                            acionamentoCard.classList.remove('error');
-                        }, 3000);
-                    }
-                }
+            if (!descricao) {
+                this.showError(`Descrição do acionamento ${i} é obrigatória`);
+                return false;
             }
-
-            if (!isValid) {
-                alert('Complete todos os acionamentos antes de continuar.');
-            }
-
-            return isValid;
         }
-
+    }
+    
+    return true;
+}
+showError(message) {
+    console.error(`Validação ${MODULE_NAME}:`, message);
+    alert(message); // Fallback simples
+    
+    // Tentar usar sistema de notificação se disponível
+    if (window.FichaTecnica?.showError) {
+        window.FichaTecnica.showError(message);
+    }
+}
         generatePreview() {
             const data = this.collectData();
             if (!data || data.quantidade === 0) {

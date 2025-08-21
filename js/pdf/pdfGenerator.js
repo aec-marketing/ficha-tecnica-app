@@ -244,13 +244,13 @@ class DataCollector {
     /**
      * Coleta dados do consultor
      */
-    collectConsultor() {
-        return {
-            nome: Utils.getValue('consultorNome'),
-            telefone: Utils.getValue('consultorTelefone'),
-            email: Utils.getValue('consultorEmail')
-        };
-    }
+collectConsultor() {
+    return {
+        nome: Utils.getValue('consultorNome'),
+        telefone: Utils.getValue('consultorTelefone'),
+        email: Utils.getValue('consultorEmail')
+    };
+}
 
     /**
      * Coleta dados do cliente
@@ -271,36 +271,91 @@ class DataCollector {
     /**
      * Coleta dados da máquina
      */
-    collectMaquina() {
-        return {
-            // Básicos
-            nome: Utils.getValue('maquinaNome'),
-            modelo: Utils.getValue('maquinaModelo'),
-            fabricante: Utils.getValue('maquinaFabricante'),
-            numeroSerie: Utils.getValue('maquinaNumeroSerie'),
-            anoFabricacao: Utils.getValue('maquinaAnoFabricacao'),
-            
-            // Técnicos
-            tensaoEntrada: DataCollector.getTensaoEntradaValue(),
-            fase: Utils.getValue('maquinaFase'),
-            neutro: Utils.getValue('maquinaNeutro'),
-            tensaoComando: DataCollector.getTensaoComandoValue(),
-            tipoControle: Utils.getValue('maquinaTipoControle'),
-            tensaoAlimentacao: Utils.getValue('maquinaTensaoAlimentacao'),
-            potenciaInstalada: Utils.getValue('maquinaPotenciaInstalada'),
-            corrente: Utils.getValue('maquinaCorrente'),
-            frequencia: Utils.getValue('maquinaFrequencia'),
-            
-            // Checkboxes
-            tipoNovo: Utils.getCheckboxValue('tipoNovo'),
-            painelAco: Utils.getCheckboxValue('painelAco'),
-            abordagemAutomacao: Utils.getCheckboxValue('abordagemAutomacao'),
-            
-            // Arrays (futuro)
-            tipoDispositivo: [],
-            tipoPainel: []
-        };
+collectMaquina() {
+    return {
+        // Básicos
+        nome: Utils.getValue('maquinaNome'),
+        modelo: Utils.getValue('maquinaModelo'),
+        fabricante: Utils.getValue('maquinaFabricante'),
+        numeroSerie: Utils.getValue('maquinaNumeroSerie'),
+        anoFabricacao: Utils.getValue('maquinaAnoFabricacao'),
+        
+        // Técnicos
+        tensaoEntrada: DataCollector.getTensaoEntradaValue(),
+        fase: Utils.getValue('maquinaFase'),
+        neutro: Utils.getValue('maquinaNeutro'),
+        tensaoComando: DataCollector.getTensaoComandoValue(),
+        tipoControle: Utils.getValue('maquinaTipoControle'),
+        tensaoAlimentacao: Utils.getValue('maquinaTensaoAlimentacao'),
+        potenciaInstalada: Utils.getValue('maquinaPotenciaInstalada'),
+        corrente: Utils.getValue('maquinaCorrente'),
+        frequencia: Utils.getValue('maquinaFrequencia'),
+        
+        // Checkboxes individuais (fallback)
+        tipoNovo: Utils.getCheckboxValue('tipoNovo'),
+        painelAco: Utils.getCheckboxValue('painelAco'),
+        abordagemAutomacao: Utils.getCheckboxValue('abordagemAutomacao'),
+        
+        // Arrays corretos
+        tipoDispositivo: this.collectMaquinaCheckboxGroup('tipoDispositivo'),
+        tipoPainel: this.collectMaquinaCheckboxGroup('tipoPainel'),
+        abordagem: this.collectMaquinaCheckboxGroup('abordagem')
+    };
+}
+
+// Adicionar este método após collectMaquina():
+collectMaquinaCheckboxGroup(groupName) {
+    const values = [];
+    
+    if (groupName === 'tipoDispositivo') {
+        const checkboxes = [
+            { id: 'tipoNovo', value: 'Novo' },
+            { id: 'tipoRetrofit', value: 'Retrofit' },
+            { id: 'tipoAdequacao', value: 'Adequação NR10/NR12' },
+            { id: 'tipoAutomacao', value: 'Automação' }
+        ];
+        
+        checkboxes.forEach(checkbox => {
+            if (document.getElementById(checkbox.id)?.checked) {
+                values.push(checkbox.value);
+            }
+        });
+        
+    } else if (groupName === 'tipoPainel') {
+        const checkboxes = [
+            { id: 'painelAco', value: 'Aço Carbono' },
+            { id: 'painelABS', value: 'ABS' },
+            { id: 'painelInox', value: 'Inox' }
+        ];
+        
+        checkboxes.forEach(checkbox => {
+            if (document.getElementById(checkbox.id)?.checked) {
+                values.push(checkbox.value);
+            }
+        });
+        
+        // Campo "Outro" personalizado
+        const painelOutro = document.getElementById('painelOutro');
+        const painelOutroTexto = document.getElementById('painelOutroTexto');
+        if (painelOutro?.checked && painelOutroTexto?.value.trim()) {
+            values.push(painelOutroTexto.value.trim());
+        }
+        
+    } else if (groupName === 'abordagem') {
+        const checkboxes = [
+            { id: 'abordagemAutomacao', value: 'Painel de Automação' },
+            { id: 'abordagemSeguranca', value: 'Painel de Segurança' }
+        ];
+        
+        checkboxes.forEach(checkbox => {
+            if (document.getElementById(checkbox.id)?.checked) {
+                values.push(checkbox.value);
+            }
+        });
     }
+    
+    return values;
+}
 
 /**
  * Obtém valor da tensão de comando, tratando "outro"
@@ -421,33 +476,17 @@ collectInfraestrutura() {
     // Campos que podem ter "Outro"
     const dropdownFields = [
         'pontoAlimentacao', 'infraestruturaCabeamento', 'pontoArComprimido',
-        'fixacaoPainel', 'fixacaoDispositivo', 'protocoloBase'
+        'fixacaoPainel', 'fixacaoDispositivo'
     ];
     
     dropdownFields.forEach(fieldId => {
-        const select = document.getElementById(fieldId);
-        if (select) {
-            const value = select.value.trim();
-            
-            if (value.toLowerCase() === 'outro') {
-                // Buscar campo de texto personalizado
-                const outroField = document.getElementById(fieldId + 'Outro');
-                if (outroField && outroField.value.trim()) {
-                    data[fieldId] = outroField.value.trim();
-                } else {
-                    data[fieldId] = 'Outro (não especificado)';
-                }
-            } else {
-                data[fieldId] = value;
-            }
-        } else {
-            data[fieldId] = '';
-        }
+        data[fieldId] = Utils.getDropdownValue(fieldId);
     });
     
     // Campos restantes (normais)
     data.distanciaEnergia = Utils.getValue('distanciaEnergia');
     data.distanciaAr = Utils.getValue('distanciaAr');
+    data.protocoloBase = Utils.getValue('protocoloBase');
     data.protocoloAnalogico0_10v = Utils.getCheckboxValue('protocoloAnalogico0_10v');
     data.protocoloDigital = Utils.getCheckboxValue('protocoloDigital');
     data.horarioFinalSemana = Utils.getCheckboxValue('horarioFinalSemana');
@@ -468,35 +507,53 @@ collectInfraestrutura() {
         };
     }
 
-    /**
-     * Coleta imagens do documento
-     */
-    collectImages() {
-        const images = [];
-        const selectors = [
-            '.uploaded-image img',
-            '.image-preview img',
-            '.obs-image img',
-            'img[data-image-upload]',
-            '.image-container img'
-        ];
-        
-        selectors.forEach(selector => {
-            document.querySelectorAll(selector).forEach(img => {
-                if (img.src && !img.src.includes('placeholder')) {
-                    images.push({
-                        name: img.alt || img.dataset.name || `Imagem ${images.length + 1}`,
-                        src: img.src,
-                        width: img.naturalWidth || img.width,
-                        height: img.naturalHeight || img.height
-                    });
-                }
-            });
+collectImages() {
+    const images = [];
+    
+    // Priorizar sistema novo de observações
+    if (window.FichaTecnica?.state?.data?.observacoes?.imagens) {
+        const obsImages = window.FichaTecnica.state.data.observacoes.imagens;
+        obsImages.forEach(img => {
+            const imageUrl = window.cloudinaryManager?.getImageUrl(img) || img.local?.base64;
+            if (imageUrl) {
+                images.push({
+                    name: img.filename || `Imagem ${images.length + 1}`,
+                    src: imageUrl,
+                    width: img.local?.dimensions?.width || img.cloud?.dimensions?.width || 400,
+                    height: img.local?.dimensions?.height || img.cloud?.dimensions?.height || 300
+                });
+            }
         });
         
-        console.log(`📸 ${images.length} imagens coletadas`);
-        return images;
+        console.log(`Imagens coletadas do sistema novo: ${images.length}`);
+        return images; // Retornar aqui para evitar buscar nos seletores antigos
     }
+    
+    // Fallback para sistema antigo (apenas se não houver imagens no novo sistema)
+    const selectors = [
+        '.uploaded-image img',
+        '.image-preview img', 
+        '.obs-image img',
+        'img[data-image-upload]',
+        '.image-container img'
+    ];
+    
+    selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(img => {
+            if (img.src && !img.src.includes('placeholder')) {
+                images.push({
+                    name: img.alt || img.dataset.name || `Imagem ${images.length + 1}`,
+                    src: img.src,
+                    width: img.naturalWidth || img.width,
+                    height: img.naturalHeight || img.height
+                });
+            }
+        });
+    });
+    
+    console.log(`Total de imagens coletadas: ${images.length}`);
+    return images;
+}
 
     /**
      * Atualiza referências globais
@@ -946,7 +1003,7 @@ renderMaquinaCompact(data) {
             { text: 'PAINÉIS', background: [245, 158, 11], color: [255, 255, 255], weight: 'bold', size: 8 },
             { text: this.formatTipoPainel(data), size: 8 },
             { text: 'ABORDAGEM', background: [245, 158, 11], color: [255, 255, 255], weight: 'bold', size: 8 },
-            { text: data.abordagemAutomacao ? 'Automação' : 'N/A', size: 8 }
+{ text: this.formatAbordagem(data), size: 8 }
         ],
         [
             { text: 'ALIMENTAÇÃO ELÉTRICA', background: [245, 158, 11], color: [255, 255, 255], weight: 'bold', size: 8 },
@@ -971,7 +1028,7 @@ renderMaquinaCompact(data) {
  * Formata Tipo de Dispositivo da máquina
  */
 formatTipoDispositivo(data) {
-    // Verificar se existe array tipoDispositivo
+    // Priorizar array se existir
     if (data.tipoDispositivo && Array.isArray(data.tipoDispositivo) && data.tipoDispositivo.length > 0) {
         return data.tipoDispositivo.join(', ');
     }
@@ -979,17 +1036,15 @@ formatTipoDispositivo(data) {
     // Fallback: verificar checkboxes individuais
     const tipos = [];
     if (data.tipoNovo) tipos.push('Novo');
-    if (data.retrofitCompleto) tipos.push('Retrofit Completo');
-    if (data.retrofitParcial) tipos.push('Retrofit Parcial');
+    if (data.tipoRetrofit) tipos.push('Retrofit');
+    if (data.tipoAdequacao) tipos.push('Adequação NR10/NR12');
+    if (data.tipoAutomacao) tipos.push('Automação');
     
     return tipos.length > 0 ? tipos.join(', ') : 'N/A';
 }
 
-/**
- * Formata Tipo de Painel da máquina
- */
 formatTipoPainel(data) {
-    // Verificar se existe array tipoPainel
+    // Priorizar array se existir
     if (data.tipoPainel && Array.isArray(data.tipoPainel) && data.tipoPainel.length > 0) {
         return data.tipoPainel.join(', ');
     }
@@ -997,9 +1052,22 @@ formatTipoPainel(data) {
     // Fallback: verificar checkboxes individuais
     const tipos = [];
     if (data.painelAco) tipos.push('Aço Carbono');
+    if (data.painelABS) tipos.push('ABS');
     if (data.painelInox) tipos.push('Inox');
-    if (data.painelAluminio) tipos.push('Alumínio');
-    if (data.painelPlastico) tipos.push('Plástico');
+    
+    return tipos.length > 0 ? tipos.join(', ') : 'N/A';
+}
+
+formatAbordagem(data) {
+    // Priorizar array se existir
+    if (data.abordagem && Array.isArray(data.abordagem) && data.abordagem.length > 0) {
+        return data.abordagem.join(', ');
+    }
+    
+    // Fallback: verificar checkboxes individuais
+    const tipos = [];
+    if (data.abordagemAutomacao) tipos.push('Painel de Automação');
+    if (data.abordagemSeguranca) tipos.push('Painel de Segurança');
     
     return tipos.length > 0 ? tipos.join(', ') : 'N/A';
 }
@@ -2296,15 +2364,20 @@ class PDFGenerator {
         return true;
     }
 
-    /**
-     * Gera o PDF completo
-     */
-    async generate() {
-        try {
-            console.log('📄 Iniciando geração do PDF...');
-            
-            // Verificar bibliotecas
-            this.checkLibraries();
+async generate() {
+    // Verificação de geração em andamento
+    if (window.pdfGenerationActive) {
+        console.warn('PDF já está sendo gerado, ignorando solicitação...');
+        return;
+    }
+    
+    window.pdfGenerationActive = true;
+    
+    try {
+        console.log('📄 Iniciando geração do PDF...');
+        
+        // Verificar bibliotecas
+        this.checkLibraries();
             
             // Mostrar loading
             this.ui.showLoading('Gerando PDF...');
@@ -2331,13 +2404,16 @@ class PDFGenerator {
             this.ui.hideLoading();
             this.ui.showSuccess(`PDF gerado: ${filename}`);
             
-            console.log('✅ PDF gerado com sucesso');
-            
-        } catch (error) {
-            this.ui.hideLoading();
-            this.ui.showError(error.message);
-            console.error('❌ Erro na geração do PDF:', error);
-        }
+console.log('✅ PDF gerado com sucesso');
+        
+    } catch (error) {
+        this.ui.hideLoading();
+        this.ui.showError(error.message);
+        console.error('❌ Erro na geração do PDF:', error);
+    } finally {
+        // Sempre liberar o lock
+        window.pdfGenerationActive = false;
+    }
     }
 
     /**
@@ -2361,6 +2437,8 @@ class PDFGenerator {
         this.sectionRenderers = new SectionRenderers(this.renderer);
     }
 
+
+    
     /**
      * Renderiza todo o conteúdo do PDF
      */
@@ -3003,23 +3081,35 @@ class PDFSystem {
 }
 
 // ===========================
-// AUTO-INICIALIZAÇÃO
+// AUTO-INICIALIZAÇÃO SEGURA
 // ===========================
 
-// Criar instância global
-const pdfSystem = new PDFSystem();
-
-// Inicializar quando DOM estiver pronto
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => pdfSystem.init());
-} else {
-    pdfSystem.init();
+// Função de inicialização única
+function initializePDFSystem() {
+    if (window.pdfSystemInitialized) return;
+    
+    try {
+        const pdfSystem = new PDFSystem();
+        pdfSystem.init();
+        
+        // Tornar disponível globalmente
+        window.pdfSystem = pdfSystem;
+        window.PDFSystem = pdfSystem;
+        window.generatePDF = () => pdfSystem.generatePDF();
+        
+        window.pdfSystemInitialized = true;
+        console.log('✅ PDF System inicializado');
+    } catch (error) {
+        console.error('❌ Erro na inicialização PDF:', error);
+    }
 }
 
-// Exportar para uso global
-window.PDFSystem = pdfSystem;
-
-console.log('📄 PDF Generator Refatorado carregado com sucesso!');
+// Inicializar quando apropriado
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePDFSystem);
+} else {
+    setTimeout(initializePDFSystem, 100);
+}
 
 // ===========================
 // COMPATIBILIDADE E ALIASES
@@ -3028,15 +3118,20 @@ console.log('📄 PDF Generator Refatorado carregado com sucesso!');
 // Garantir que todas as variações funcionem
 window.PDFSystem = window.pdfSystem;
 
-// Verificar se foi inicializado
-if (!window.pdfSystem) {
-    console.error('❌ PDFSystem não foi inicializado corretamente');
-    
-    // Tentar inicializar manualmente
-    window.pdfSystem = new PDFSystem();
-    window.pdfSystem.init();
-    window.PDFSystem = window.pdfSystem;
-}
+setTimeout(() => {
+    if (!window.pdfSystem) {
+        console.warn('⚠️ PDFSystem inicializando tardiamente...');
+        
+        try {
+            window.pdfSystem = new PDFSystem();
+            window.pdfSystem.init();
+            window.PDFSystem = window.pdfSystem;
+            console.log('✅ PDFSystem inicializado com recuperação');
+        } catch (error) {
+            console.error('❌ Falha na inicialização de recuperação:', error);
+        }
+    }
+}, 500);
 
 // Compatibilidade com app.js
 window.pdfGenerator = {
