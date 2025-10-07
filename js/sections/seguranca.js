@@ -475,13 +475,12 @@
             // 1. Forçar sincronização antes de validar
             this.forceSyncActiveDevices();
 
-            // 2. Verificar se há dispositivos selecionados
+            // 2. Se não houver dispositivos selecionados, permite pular a seção
             if (this.activeDevices.size === 0) {
-                alert('Selecione pelo menos um dispositivo de segurança para continuar.');
-                return false;
+                return true;
             }
 
-            // 3. Verificar quantidades válidas
+            // 3. Se há dispositivos selecionados, verificar quantidades válidas
             let hasInvalid = false;
             this.activeDevices.forEach((data, deviceId) => {
                 const quantity = parseInt(data.quantity) || 0;
