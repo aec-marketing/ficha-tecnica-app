@@ -399,11 +399,22 @@ window.FichaTecnica = FichaTecnica;
 // ===========================================
 function formatPhone(phone) {
     const cleaned = phone.replace(/\D/g, '');
-    
+
     if (cleaned.length <= 2) return cleaned;
     if (cleaned.length <= 7) return cleaned.replace(/(\d{2})(\d+)/, '($1) $2');
     if (cleaned.length <= 11) return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
     return cleaned.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
+}
+
+function formatCNPJ(cnpj) {
+    let value = cnpj.replace(/\D/g, '');
+    if (value.length <= 14) {
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    return value;
 }
 
 function isValidEmail(email) {
@@ -533,13 +544,14 @@ function generateSimplePreview(sectionName, sectionData) {
     };
     
     const fieldLabels = {
-        consultor: { 
-            nome: 'Nome', telefone: 'Telefone', email: 'Email' 
+        consultor: {
+            nome: 'Nome', telefone: 'Telefone', email: 'Email'
         },
-        cliente: { 
-            nome: 'Empresa', cidade: 'Cidade', contato: 'Contato', 
+        cliente: {
+            nome: 'Empresa', cidade: 'Cidade', contato: 'Contato',
             segmento: 'Segmento', telefone: 'Telefone', horario: 'Horário',
-            email: 'Email', turnos: 'Turnos'
+            email: 'Email', cnpj: 'CNPJ', endereco: 'Endereço',
+            setor: 'Setor', turnos: 'Turnos'
         }
     };
     
@@ -565,13 +577,19 @@ function setupFormHandlers(container) {
     container.querySelectorAll('input, select, textarea').forEach(input => {
         input.addEventListener('input', handleInputChange);
         input.addEventListener('change', handleInputChange);
-        
+
         if (input.type === 'tel') {
             input.addEventListener('input', function() {
                 this.value = FichaTecnica.formatPhone(this.value);
             });
         }
-        
+
+        if (input.id === 'clienteCnpj') {
+            input.addEventListener('input', function() {
+                this.value = formatCNPJ(this.value);
+            });
+        }
+
         input.addEventListener('blur', () => validateField(input));
     });
 }

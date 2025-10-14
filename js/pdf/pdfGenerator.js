@@ -25,6 +25,9 @@ const FIELD_LABELS = {
     clienteTelefone: 'Telefone',
     clienteHorario: 'Horário',
     clienteEmail: 'E-mail',
+    clienteCnpj: 'CNPJ',
+    clienteEndereco: 'Endereço',
+    clienteSetor: 'Setor',
     clienteTurnos: 'Turnos',
     
     // Máquina
@@ -264,6 +267,9 @@ collectConsultor() {
             telefone: Utils.getValue('clienteTelefone'),
             horario: Utils.getValue('clienteHorario'),
             email: Utils.getValue('clienteEmail'),
+            cnpj: Utils.getValue('clienteCnpj'),
+            endereco: Utils.getValue('clienteEndereco'),
+            setor: Utils.getValue('clienteSetor'),
             turnos: Utils.getValue('clienteTurnos')
         };
     }
@@ -876,10 +882,21 @@ renderClienteCompact(data) {
             null, null
         ],
         [
+            { text: 'CNPJ', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
+            { text: data.cnpj || 'N/A', size: 8 },
             { text: 'SEGMENTO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
-            { text: data.segmento || 'N/A', size: 8 },
+            { text: data.segmento || 'N/A', size: 8 }
+        ],
+        [
+            { text: 'ENDEREÇO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
+            { text: data.endereco || 'N/A', size: 8, colspan: 3 },
+            null, null
+        ],
+        [
             { text: 'LOCALIZAÇÃO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
-            { text: data.cidade || 'N/A', size: 8 }
+            { text: data.cidade || 'N/A', size: 8 },
+            { text: 'SETOR', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
+            { text: data.setor || 'N/A', size: 8 }
         ],
         [
             { text: 'RESP. TÉCNICO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
@@ -887,23 +904,23 @@ renderClienteCompact(data) {
             { text: 'OPERAÇÃO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
             { text: this.formatOperacao(data), size: 8 }
         ],
-[
-    { text: 'CONTATO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
-    { text: this.formatContatoCompleto(data), size: 8, colspan: 3 },
-    null, null
-]
+        [
+            { text: 'CONTATO', background: [14, 165, 233], color: [255, 255, 255], weight: 'bold', size: 8 },
+            { text: this.formatContatoCompleto(data), size: 8, colspan: 3 },
+            null, null
+        ]
     ];
     
     this.renderTable(tableData, {
         x: PDF_STYLE.margins.left,
         y: this.currentY,
         width: 174,
-        height: 28,
-        rows: 4,
+        height: 42,  // Era 28, agora 42 para acomodar as novas linhas
+        rows: 6,     // Era 4, agora 6 linhas
         cols: 4
     });
     
-    this.currentY += 32;
+    this.currentY += 46;  // Era 32, agora 46
 }
 
 

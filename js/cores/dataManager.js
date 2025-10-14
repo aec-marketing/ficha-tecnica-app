@@ -375,7 +375,7 @@ restoreInterface(data) {
             [data.consultor?.nome, 'consultorNome'],
             [data.consultor?.telefone, 'consultorTelefone'],
             [data.consultor?.email, 'consultorEmail'],
-            
+
             // Cliente
             [data.cliente?.nome, 'clienteNome'],
             [data.cliente?.cidade, 'clienteCidade'],
@@ -384,15 +384,18 @@ restoreInterface(data) {
             [data.cliente?.telefone, 'clienteTelefone'],
             [data.cliente?.horario, 'clienteHorario'],
             [data.cliente?.email, 'clienteEmail'],
+            [data.cliente?.cnpj, 'clienteCnpj'],
+            [data.cliente?.endereco, 'clienteEndereco'],
+            [data.cliente?.setor, 'clienteSetor'],
             [data.cliente?.turnos, 'clienteTurnos'],
-            
+
             // Máquina
             [data.maquina?.nome, 'maquinaNome'],
             [data.maquina?.fase, 'maquinaFase'],
             [data.maquina?.neutro, 'maquinaNeutro'],
             [data.maquina?.tipoControle, 'maquinaTipoControle']
         ];
-        
+
         fieldMap.forEach(([value, id]) => {
             const field = document.getElementById(id);
             if (field && value) field.value = value;
